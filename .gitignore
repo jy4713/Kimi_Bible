@@ -1,0 +1,31 @@
+# ── Build outputs (regenerated automatically) ──────────────────────────────
+bible_app/build/
+bible_app/.dart_tool/
+bible_app/.flutter-plugins
+bible_app/.flutter-plugins-dependencies
+bible_app/android/.gradle/
+bible_app/android/local.properties
+bible_app/android/app/build/
+bible_app/**/java_pid*.hprof
+*.hprof
+*.log
+
+# ── IDE / tool files ────────────────────────────────────────────────────────
+.idea/
+.metadata
+*.iml
+.vscode/
+*.swp
+.DS_Store
+
+# ── Large binaries (keep local only) ────────────────────────────────────────
+*.apk
+*.zip
+bible_app_release.apk
+
+# ── Platform folders not needed for APK / web builds ────────────────────────
+bible_app/windows/
+
+# ── Raw source data backup (already copied into bible_app/assets) ───────────
+# Keep on disk locally, but don't sync to git — the build only needs assets/.
+data/
