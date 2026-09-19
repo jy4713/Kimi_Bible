@@ -195,11 +195,22 @@ class _SheetMusicPageState extends State<_SheetMusicPage> {
     if (_bytes == null) {
       return Center(child: Text(strings.cannotLoadSheetMusic));
     }
-    return InteractiveViewer(
-      minScale: 0.5,
-      maxScale: 4.0,
-      child: Center(
-        child: Image.memory(_bytes!, fit: BoxFit.contain),
+    // Fill the viewport: the image is scaled up so it always spans the full
+    // width on phones and tablets alike (pinch-zoom still available, and
+    // taller-than-screen images can be panned).
+    return LayoutBuilder(
+      builder: (context, constraints) => InteractiveViewer(
+        minScale: 0.5,
+        maxScale: 4.0,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: constraints.maxWidth,
+              minHeight: constraints.maxHeight,
+            ),
+            child: Image.memory(_bytes!, fit: BoxFit.contain),
+          ),
+        ),
       ),
     );
   }

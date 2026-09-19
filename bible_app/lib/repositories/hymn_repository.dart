@@ -65,7 +65,9 @@ class HymnRepository {
     final archive = _archives[source.id];
     if (archive == null) return null;
 
-    final file = archive.findFile('p$chapter.png');
+    final file = archive.findFile('p$chapter.png') ??
+        archive.findFile('p$chapter.jpg') ??
+        archive.findFile('p$chapter.jpeg');
     if (file == null) return null;
 
     final bytes = Uint8List.fromList(file.content as List<int>);
