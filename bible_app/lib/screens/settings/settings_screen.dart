@@ -222,12 +222,24 @@ class _SettingsBody extends StatelessWidget {
     SourceType type,
   ) {
     final strings = AppStrings(settings.appLanguage);
+    final enabledCount = switch (type) {
+      SourceType.bible => settings.enabledBibles.length,
+      SourceType.commentary => settings.enabledCommentaries.length,
+      SourceType.hymn => settings.enabledHymns.length,
+      SourceType.dictionary => 0,
+    };
     return sources.map((src) {
+      // The last remaining enabled source of a type cannot be switched off.
+      final isLastEnabled = src.isEnabled && enabledCount <= 1;
       return ListTile(
         leading: Icon(
           _iconFor(type),
           color: src.isEnabled
-              ? Theme.of(context).colorScheme.primary
+              ? (Theme.of(context).brightness == Brightness.dark
+                  // The dark theme's primary is a deep blue that vanishes on
+                  // dark surfaces — use a bright same-hue tint instead.
+                  ? Colors.lightBlueAccent
+                  : Theme.of(context).colorScheme.primary)
               : Theme.of(context).colorScheme.outline,
         ),
         title: Text(src.name),
@@ -237,21 +249,25 @@ class _SettingsBody extends StatelessWidget {
           children: [
             Switch(
               value: src.isEnabled,
-              onChanged: (v) async {
-                final changed = await settings.toggleSource(src, v);
-                if (!changed && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(strings.cannotDisableLastSource),
-                    ),
-                  );
-                }
-                if (type == SourceType.bible && context.mounted) {
-                  await context.read<BibleProvider>().syncWithSources(
-                        context.read<SettingsProvider>().enabledBibles,
-                      );
-                }
-              },
+              onChanged: isLastEnabled
+                  ? null
+                  : (v) async {
+                      final changed = await settings.toggleSource(src, v);
+                      if (!changed && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(strings.cannotDisableLastSource),
+                          ),
+                        );
+                      }
+                      if (type == SourceType.bible && context.mounted) {
+                        await context.read<BibleProvider>().syncWithSources(
+                              context
+                                  .read<SettingsProvider>()
+                                  .enabledBibles,
+                            );
+                      }
+                    },
             ),
             if (settings.canRemoveSource(src))
               IconButton(

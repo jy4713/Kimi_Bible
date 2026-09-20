@@ -17,16 +17,17 @@ class HtmlContent extends StatelessWidget {
       height: 1.6,
       color: Theme.of(context).colorScheme.onSurface,
     );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final doc = html_parser.parseFragment(html);
     return Text.rich(
       TextSpan(
         style: baseStyle,
-        children: doc.nodes.map((n) => _node(n, baseStyle)).toList(),
+        children: doc.nodes.map((n) => _node(n, baseStyle, isDark)).toList(),
       ),
     );
   }
 
-  TextSpan _node(dom.Node node, TextStyle style) {
+  TextSpan _node(dom.Node node, TextStyle style, bool isDark) {
     if (node is dom.Text) {
       return TextSpan(text: node.text, style: style);
     }
@@ -45,16 +46,29 @@ class HtmlContent extends StatelessWidget {
           final colorHex = node.attributes['color'];
           if (colorHex != null) {
             final c = _parseColor(colorHex);
-            if (c != null) s = s.copyWith(color: c);
+            // Dark HTML colors (e.g. #0000cc) disappear on a dark background —
+            // swap them for a bright tint of the same hue.
+            if (c != null) s = s.copyWith(color: _readableOn(c, isDark));
           }
           break;
         case 'br':
           return const TextSpan(text: '\n');
       }
-      final children = node.nodes.map((n) => _node(n, s)).toList();
+      final children =
+          node.nodes.map((n) => _node(n, s, isDark)).toList();
       return TextSpan(style: s, children: children);
     }
     return const TextSpan();
+  }
+
+  /// Returns [c] as-is on light surfaces; on dark surfaces dark colors are
+  /// re-lit to the same hue so they stay readable.
+  static Color _readableOn(Color c, bool isDark) {
+    if (!isDark) return c;
+    final luminance = 0.299 * c.r + 0.587 * c.g + 0.114 * c.b;
+    if (luminance >= 0.55) return c;
+    final hsl = HSLColor.fromColor(c);
+    return hsl.withLightness(0.72).withSaturation(0.75).toColor();
   }
 
   static Color? _parseColor(String hex) {
