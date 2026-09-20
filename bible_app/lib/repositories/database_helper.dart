@@ -25,17 +25,23 @@ class DatabaseHelper {
   }
 
   /// Copies an asset to the documents directory if not already there (native only).
+  /// Re-copies when the bundled asset was updated (size differs) so app updates
+  /// ship refreshed DBs instead of silently keeping a stale copy from the
+  /// previous install.
   /// Returns the absolute file path.
   Future<String> ensureAsset(String assetPath) async {
     final dir = await _dbDir();
     final fileName = p.basename(assetPath);
     final destPath = p.join(dir, fileName);
+    final dest = File(destPath);
 
-    if (!File(destPath).existsSync()) {
-      final ByteData data = await rootBundle.load(assetPath);
-      final bytes = data.buffer.asUint8List();
-      await File(destPath).writeAsBytes(bytes, flush: true);
+    final ByteData data = await rootBundle.load(assetPath);
+    final bytes = data.buffer.asUint8List();
+
+    if (dest.existsSync() && await dest.length() == bytes.length) {
+      return destPath;
     }
+    await dest.writeAsBytes(bytes, flush: true);
     return destPath;
   }
 

@@ -49,5 +49,6 @@ flutter:
     - assets/commentary/만나주석.cdb
     - assets/hymn/새찬송가.hdb
     - assets/hymn/새찬송가.cmp
+    - assets/hymn/교독문.hdb
     - assets/dic/HebGrkKo.dct
     - assets/dic/HebGrkEn.dct

@@ -6,10 +6,15 @@ import '../../models/hymn_entry.dart';
 import '../../models/source_info.dart';
 import '../../providers/settings_provider.dart';
 import '../../repositories/hymn_repository.dart';
+import '../../widgets/settings_action_button.dart';
 import 'hymn_detail_screen.dart';
 
 class HymnListScreen extends StatefulWidget {
-  const HymnListScreen({super.key});
+  /// When set (e.g. '교독문'), this screen is locked to that hymnal source:
+  /// no source dropdown. Used by the separate bottom-nav tab.
+  final String? fixedSourceId;
+
+  const HymnListScreen({super.key, this.fixedSourceId});
 
   @override
   State<HymnListScreen> createState() => _HymnListScreenState();
@@ -49,12 +54,27 @@ class _HymnListScreenState extends State<HymnListScreen> {
 
   Future<void> _load() async {
     final settings = context.read<SettingsProvider>();
-    final hymns = settings.enabledHymns;
+    final all = settings.enabledHymns;
+    List<SourceInfo> hymns;
+    if (widget.fixedSourceId != null) {
+      // Locked tab (교독문): use the enabled entry, falling back to the
+      // built-in definition even if the user disabled it in settings.
+      hymns = all.where((s) => s.id == widget.fixedSourceId).toList();
+      hymns = hymns.isEmpty
+          ? kBuiltInHymns.where((s) => s.id == widget.fixedSourceId).toList()
+          : hymns;
+    } else {
+      // 교독문 has its own bottom-nav tab; keep it out of the hymnal picker.
+      hymns = all.where((s) => s.id != '교독문').toList();
+    }
     if (hymns.isEmpty) {
       setState(() => _loading = false);
       return;
     }
-    _source = hymns.first;
+    final current = _source;
+    if (current == null || !hymns.any((s) => s.id == current.id)) {
+      _source = hymns.first;
+    }
     try {
       final list = await HymnRepository.instance.getAllHymns(_source!);
       if (mounted) {
@@ -103,36 +123,70 @@ class _HymnListScreenState extends State<HymnListScreen> {
     if (settings.enabledHymns.isEmpty) {
       return Center(child: Text(strings.noActiveHymns));
     }
+    // 교독문 등 악보(.cmp)가 없는 소스는 목록이 짧고 번호·제목으로 충분해
+    // 검색 창을 숨긴다.
+    final hasCompanion =
+        _source?.effectiveCompanionPath.isNotEmpty ?? false;
+    final pickerHymns =
+        settings.enabledHymns.where((s) => s.id != '교독문').toList();
+    final showPicker = widget.fixedSourceId == null && pickerHymns.length > 1;
     return Scaffold(
       appBar: AppBar(
-        title: Text(strings.hymns),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(52),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: TextField(
-              controller: _search,
-              decoration: InputDecoration(
-                hintText: strings.hymnSearchHint,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _search.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _search.clear();
-                          _filter('');
-                        },
-                      )
-                    : null,
-                isDense: true,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                filled: true,
-              ),
-              onChanged: _filter,
-            ),
-          ),
-        ),
+        title: showPicker
+            ? DropdownButtonHideUnderline(
+                child: DropdownButton<SourceInfo>(
+                  value:
+                      pickerHymns.any((s) => s.id == _source?.id && s.isEnabled)
+                          ? _source
+                          : null,
+                  items: [
+                    for (final s in pickerHymns)
+                      DropdownMenuItem(value: s, child: Text(s.name)),
+                  ],
+                  onChanged: (s) {
+                    if (s == null || s.id == _source?.id) return;
+                    setState(() {
+                      _source = s;
+                      _loading = true;
+                      _search.clear();
+                    });
+                    _load();
+                  },
+                ),
+              )
+            : Text(widget.fixedSourceId != null
+                ? (_source?.name ?? strings.responsiveReading)
+                : strings.hymns),
+        actions: const [SettingsActionButton()],
+        bottom: hasCompanion
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(52),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: TextField(
+                    controller: _search,
+                    decoration: InputDecoration(
+                      hintText: strings.hymnSearchHint,
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _search.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _search.clear();
+                                _filter('');
+                              },
+                            )
+                          : null,
+                      isDense: true,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24)),
+                      filled: true,
+                    ),
+                    onChanged: _filter,
+                  ),
+                ),
+              )
+            : null,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -142,7 +196,8 @@ class _HymnListScreenState extends State<HymnListScreen> {
                   padding: const EdgeInsets.all(8),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    childAspectRatio: 1.4,
+                    // Slim tiles (~2/3 height); titles ellipsis after 2 lines.
+                    childAspectRatio: 2.1,
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 4,
                   ),
@@ -187,7 +242,7 @@ class _HymnCard extends StatelessWidget {
               ),
             ),
             Text(
-              hymn.title,
+              hymn.plainTitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 10),

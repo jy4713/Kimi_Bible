@@ -201,4 +201,12 @@ final List<SourceInfo> kBuiltInHymns = [
     isBuiltIn: true,
     docPath: '',
   ),
+  SourceInfo(
+    id: '교독문',
+    name: '교독문',
+    type: SourceType.hymn,
+    assetPath: 'assets/hymn/교독문.hdb',
+    isBuiltIn: true,
+    docPath: '',
+  ),
 ];

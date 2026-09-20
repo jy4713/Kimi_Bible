@@ -13,6 +13,7 @@ import 'bible_search_screen.dart';
 import '_book_selector_dialog.dart';
 import '_translation_selector.dart';
 import 'verse_list_view.dart';
+import '../../widgets/settings_action_button.dart';
 
 class BibleScreen extends StatefulWidget {
   const BibleScreen({super.key});
@@ -530,6 +531,7 @@ class _BibleScreenState extends State<BibleScreen> {
               ),
             ),
           ),
+          const SettingsActionButton(),
         ],
       ),
       body: sources.isEmpty

@@ -16,6 +16,7 @@ class SettingsProvider with ChangeNotifier {
   static const _kHymns = 'hymns';
   static const _defaultCommentaryId = '만나주석';
   static const _defaultHymnId = '새찬송가';
+  static const _readingHymnId = '교독문'; // protected like the default hymnal
 
   double _fontSize = 16.0; // Bible / commentary content text
   double _uiFontPct = 100.0; // menus, titles, buttons (90–110 % of default)
@@ -47,7 +48,8 @@ class SettingsProvider with ChangeNotifier {
     return switch (source.type) {
       SourceType.bible => _bibles.length > 1,
       SourceType.commentary => source.id != _defaultCommentaryId,
-      SourceType.hymn => source.id != _defaultHymnId,
+      SourceType.hymn =>
+        source.id != _defaultHymnId && source.id != _readingHymnId,
       SourceType.dictionary => false,
     };
   }
@@ -103,6 +105,14 @@ class SettingsProvider with ChangeNotifier {
     final hymnsJson = prefs.getString(_kHymns);
     if (hymnsJson != null && hymnsJson.isNotEmpty) {
       _hymns = SourceInfo.decodeList(hymnsJson);
+      // Merge in built-in hymnals added since the list was saved.
+      final knownHymns = _hymns.map((s) => s.id).toSet();
+      final newHymns =
+          kBuiltInHymns.where((s) => !knownHymns.contains(s.id)).toList();
+      if (newHymns.isNotEmpty) {
+        _hymns = [..._hymns, ...newHymns.map(_copySource)];
+        await _persist();
+      }
     } else {
       _hymns = kBuiltInHymns.map(_copySource).toList();
     }
@@ -137,6 +147,12 @@ class SettingsProvider with ChangeNotifier {
         orElse: () => kBuiltInHymns.first,
       );
       _hymns.insert(0, _copySource(builtIn));
+    }
+    // 교독문 is also protected: restore it if a previous build let the user
+    // delete it.
+    if (_hymns.every((s) => s.id != _readingHymnId)) {
+      final builtIn = kBuiltInHymns.where((s) => s.id == _readingHymnId);
+      if (builtIn.isNotEmpty) _hymns.add(_copySource(builtIn.first));
     }
   }
 
@@ -219,7 +235,9 @@ class SettingsProvider with ChangeNotifier {
         _commentaries.removeWhere((s) => s.id == source.id);
         break;
       case SourceType.hymn:
-        if (source.id == _defaultHymnId) return false;
+        if (source.id == _defaultHymnId || source.id == _readingHymnId) {
+          return false;
+        }
         _hymns.removeWhere((s) => s.id == source.id);
         break;
       case SourceType.dictionary:

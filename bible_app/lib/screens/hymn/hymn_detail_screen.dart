@@ -32,14 +32,27 @@ class _HymnDetailScreenState extends State<HymnDetailScreen>
   late TabController _tabController;
   late int _currentIndex;
 
+  /// True while the sheet-music viewer is zoomed in — the surrounding
+  /// PageView must not turn pages while the user pans a zoomed image.
+  bool _swipeBlocked = false;
+
+  /// Sources without a .cmp companion (e.g. 교독문) get a lyrics-only UI:
+  /// no 악보/가사 tabs, no sheet-music page view.
+  bool get hasSheetMusic => widget.source.effectiveCompanionPath.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.allHymns
         .indexWhere((h) => h.chapter == widget.initialChapter)
         .clamp(0, widget.allHymns.length - 1);
+    // A SINGLE page view backs both tabs: its item builder renders either
+    // the sheet-music page or the lyrics page for the current tab. Two page
+    // views (one per tab) caused a stale chapter from the keep-alive bucket
+    // to flash for a frame on every tab switch.
     _pageController = PageController(initialPage: _currentIndex);
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController =
+        TabController(length: 2, vsync: this)..addListener(_onTabAnim);
   }
 
   @override
@@ -51,80 +64,120 @@ class _HymnDetailScreenState extends State<HymnDetailScreen>
 
   HymnEntry get current => widget.allHymns[_currentIndex];
 
-  void _prev() {
-    if (_currentIndex > 0) {
-      _pageController.previousPage(
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+  bool get _showMusic => hasSheetMusic && _tab == 0;
+  int _tab = 0;
+
+  /// Rebuild once when the selected tab actually changes.
+  void _onTabAnim() {
+    if (_tabController.index != _tab) {
+      setState(() => _tab = _tabController.index);
     }
   }
 
-  void _next() {
-    if (_currentIndex < widget.allHymns.length - 1) {
-      _pageController.nextPage(
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+  void _onViewerScale(double scale) {
+    final blocked = scale > 1.001;
+    if (blocked != _swipeBlocked) {
+      setState(() => _swipeBlocked = blocked);
     }
+  }
+
+  void _prev() {
+    if (_currentIndex <= 0 || !_pageController.hasClients) return;
+    _pageController.previousPage(
+        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+  }
+
+  void _next() {
+    if (_currentIndex >= widget.allHymns.length - 1 ||
+        !_pageController.hasClients) {
+      return;
+    }
+    _pageController.nextPage(
+        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppStrings(context.watch<SettingsProvider>().appLanguage);
+    final settings = context.watch<SettingsProvider>();
+    final strings = AppStrings(settings.appLanguage);
+    final title = hasSheetMusic
+        ? '${strings.chapterLabel(current.chapter)}  ${current.plainTitle}'
+        : '${current.chapter}. ${current.plainTitle}';
+    final indexLabel = hasSheetMusic
+        ? strings.chapterLabel(current.chapter)
+        : '${current.chapter}';
+
+    final contentView = PageView.builder(
+      controller: _pageController,
+      physics: _swipeBlocked ? const NeverScrollableScrollPhysics() : null,
+      itemCount: widget.allHymns.length,
+      onPageChanged: (i) => setState(() {
+        _currentIndex = i;
+        _swipeBlocked = false; // a fresh page starts un-zoomed
+      }),
+      itemBuilder: (_, i) => _showMusic
+          ? _SheetMusicPage(
+              source: widget.source,
+              chapter: widget.allHymns[i].chapter,
+              onZoom: _onViewerScale,
+            )
+          : _LyricsPage(hymn: widget.allHymns[i]),
+    );
+
     return Scaffold(
       appBar: AppBar(
-        title:
-            Text('${strings.chapterLabel(current.chapter)}  ${current.title}'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(
-                icon: const Icon(Icons.image_outlined),
-                text: strings.sheetMusic),
-            Tab(icon: const Icon(Icons.lyrics_outlined), text: strings.lyrics),
-          ],
-        ),
+        title: Text(title),
+        bottom: hasSheetMusic
+            ? TabBar(
+                controller: _tabController,
+                // Icon beside the label (not stacked) to keep the bar short.
+                tabs: [
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.image_outlined, size: 18),
+                        const SizedBox(width: 5),
+                        Text(strings.sheetMusic),
+                      ],
+                    ),
+                  ),
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.lyrics_outlined, size: 18),
+                        const SizedBox(width: 5),
+                        Text(strings.lyrics),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : null,
       ),
       body: Column(
         children: [
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                // ── Sheet music image ──
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: widget.allHymns.length,
-                  onPageChanged: (i) => setState(() => _currentIndex = i),
-                  itemBuilder: (_, i) => _SheetMusicPage(
-                    source: widget.source,
-                    chapter: widget.allHymns[i].chapter,
-                  ),
-                ),
-                // ── Lyrics ──
-                PageView.builder(
-                  controller: _pageController,
-                  itemCount: widget.allHymns.length,
-                  onPageChanged: (i) => setState(() => _currentIndex = i),
-                  itemBuilder: (_, i) => _LyricsPage(hymn: widget.allHymns[i]),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: contentView),
           // Bottom nav bar
           SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
               child: Row(
                 children: [
                   IconButton.outlined(
                     onPressed: _currentIndex > 0 ? _prev : null,
+                    iconSize: 22,
+                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.chevron_left),
                   ),
                   Expanded(
                     child: Center(
                       child: Text(
-                        strings.chapterLabel(current.chapter),
+                        indexLabel,
                         style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -132,6 +185,8 @@ class _HymnDetailScreenState extends State<HymnDetailScreen>
                     onPressed: _currentIndex < widget.allHymns.length - 1
                         ? _next
                         : null,
+                    iconSize: 22,
+                    visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.chevron_right),
                   ),
                 ],
@@ -147,7 +202,16 @@ class _HymnDetailScreenState extends State<HymnDetailScreen>
 class _SheetMusicPage extends StatefulWidget {
   final SourceInfo source;
   final int chapter;
-  const _SheetMusicPage({required this.source, required this.chapter});
+
+  /// Reports the viewer's current scale so the parent can disable page
+  /// swiping while the image is zoomed in.
+  final ValueChanged<double> onZoom;
+
+  const _SheetMusicPage({
+    required this.source,
+    required this.chapter,
+    required this.onZoom,
+  });
 
   @override
   State<_SheetMusicPage> createState() => _SheetMusicPageState();
@@ -156,6 +220,7 @@ class _SheetMusicPage extends StatefulWidget {
 class _SheetMusicPageState extends State<_SheetMusicPage> {
   Uint8List? _bytes;
   bool _loading = true;
+  final TransformationController _transform = TransformationController();
 
   @override
   void initState() {
@@ -167,9 +232,19 @@ class _SheetMusicPageState extends State<_SheetMusicPage> {
   void didUpdateWidget(_SheetMusicPage old) {
     super.didUpdateWidget(old);
     if (old.chapter != widget.chapter || old.source.id != widget.source.id) {
+      _transform.value = Matrix4.identity();
       _loadImage();
     }
   }
+
+  @override
+  void dispose() {
+    _transform.dispose();
+    super.dispose();
+  }
+
+  void _reportScale() =>
+      widget.onZoom(_transform.value.getMaxScaleOnAxis());
 
   Future<void> _loadImage() async {
     setState(() {
@@ -195,22 +270,20 @@ class _SheetMusicPageState extends State<_SheetMusicPage> {
     if (_bytes == null) {
       return Center(child: Text(strings.cannotLoadSheetMusic));
     }
-    // Fill the viewport: the image is scaled up so it always spans the full
-    // width on phones and tablets alike (pinch-zoom still available, and
-    // taller-than-screen images can be panned).
-    return LayoutBuilder(
-      builder: (context, constraints) => InteractiveViewer(
-        minScale: 0.5,
-        maxScale: 4.0,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: constraints.maxWidth,
-              minHeight: constraints.maxHeight,
-            ),
-            child: Image.memory(_bytes!, fit: BoxFit.contain),
-          ),
-        ),
+    // Fit inside the CONTENT area only (the region between the tab bar and
+    // the bottom nav — the surrounding Expanded hands exactly those
+    // constraints to this page). BoxFit.contain picks whichever of
+    // width/height limits first, so on phones the page fills the width and on
+    // wide tablet layouts it shrinks to fit the height: nothing is ever cut
+    // off. Pinch-zoom and pan still work via InteractiveViewer.
+    return InteractiveViewer(
+      transformationController: _transform,
+      minScale: 1.0,
+      maxScale: 5.0,
+      onInteractionUpdate: (_) => _reportScale(),
+      onInteractionEnd: (_) => _reportScale(),
+      child: Center(
+        child: Image.memory(_bytes!, fit: BoxFit.contain),
       ),
     );
   }
@@ -228,7 +301,7 @@ class _LyricsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${hymn.chapter}. ${hymn.title}',
+            '${hymn.chapter}. ${hymn.plainTitle}',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),

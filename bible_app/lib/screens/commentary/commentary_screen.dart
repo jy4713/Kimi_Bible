@@ -8,6 +8,7 @@ import '../../providers/bible_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../repositories/commentary_repository.dart';
 import '../../widgets/html_content.dart';
+import '../../widgets/settings_action_button.dart';
 import '../bible/_book_selector_dialog.dart';
 
 class CommentaryScreen extends StatefulWidget {
@@ -189,6 +190,7 @@ class CommentaryScreenState extends State<CommentaryScreen> {
                 ),
               ),
             ),
+          const SettingsActionButton(),
         ],
       ),
       body: _loading

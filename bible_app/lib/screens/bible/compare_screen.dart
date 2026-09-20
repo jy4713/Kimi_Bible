@@ -9,6 +9,7 @@ import '../../providers/compare_provider.dart';
 import '../../providers/settings_provider.dart';
 import '_book_selector_dialog.dart';
 import '_translation_selector.dart';
+import '../../widgets/settings_action_button.dart';
 
 /// Verse-by-verse translation comparison tab.
 ///
@@ -219,6 +220,7 @@ class CompareScreenState extends State<CompareScreen> {
             tooltip: strings.compareTranslationSelection,
             onPressed: () => _selectTranslations(cmp, sources),
           ),
+          const SettingsActionButton(),
         ],
       ),
       body: sources.isEmpty

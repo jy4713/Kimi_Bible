@@ -14,6 +14,7 @@ class AppStrings {
   String get bible => isKorean ? '성경' : 'Bible';
   String get compareTab => isKorean ? '역본대조' : 'Compare';
   String get hymns => isKorean ? '찬송가' : 'Hymns';
+  String get responsiveReading => isKorean ? '교독문' : 'Reading';
   String get commentary => isKorean ? '주석' : 'Commentary';
   String get settings => isKorean ? '설정' : 'Settings';
 

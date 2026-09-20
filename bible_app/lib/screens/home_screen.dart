@@ -7,7 +7,6 @@ import 'bible/bible_screen.dart';
 import 'bible/compare_screen.dart';
 import 'commentary/commentary_screen.dart';
 import 'hymn/hymn_list_screen.dart';
-import 'settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,15 +24,15 @@ class _HomeScreenState extends State<HomeScreen> {
     Icons.menu_book_outlined,
     Icons.compare_arrows,
     Icons.music_note_outlined,
+    Icons.record_voice_over_outlined,
     Icons.comment_outlined,
-    Icons.settings_outlined,
   ];
   static const _selectedIcons = [
     Icons.menu_book,
     Icons.compare_arrows,
     Icons.music_note,
+    Icons.record_voice_over,
     Icons.comment,
-    Icons.settings,
   ];
 
   late final List<Widget> _screens;
@@ -44,9 +43,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _screens = [
       const BibleScreen(),
       CompareScreen(key: _compareKey),
+      // Hymnal picker (dropdown); 교독문 is excluded here and gets its own
+      // bottom-nav tab below because its UI differs (lyrics-only).
       const HymnListScreen(),
+      const HymnListScreen(fixedSourceId: '교독문'),
       CommentaryScreen(key: _commentaryKey),
-      const SettingsScreen(),
     ];
   }
 
@@ -58,8 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
       strings.bible,
       strings.compareTab,
       strings.hymns,
-      strings.commentary,
-      strings.settings
+      strings.responsiveReading,
+      strings.commentary
     ];
 
     return Scaffold(
@@ -76,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _compareKey.currentState?.syncFromBible();
             });
-          } else if (i == 3) {
+          } else if (i == 4) {
             // Commentary tab: jump to the exact verse being read.
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _commentaryKey.currentState?.openCurrentBibleLocation();

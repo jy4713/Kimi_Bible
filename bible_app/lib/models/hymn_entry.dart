@@ -17,4 +17,8 @@ class HymnEntry {
         title: map['title'] as String? ?? '',
         text: map['htext'] as String? ?? '',
       );
+
+  /// Title with HTML tags (e.g. `<small>(주기도문)</small>`) stripped for
+  /// display in plain-Text widgets (app bar, card, section headers).
+  String get plainTitle => title.replaceAll(RegExp(r'<[^>]*>'), '').trim();
 }
