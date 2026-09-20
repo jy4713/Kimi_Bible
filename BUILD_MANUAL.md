@@ -73,6 +73,7 @@ flutter build web --release
 - 산출물: `bible_app/build/web/` — 이 폴 더 통째를 정적 웹 서버(호스팅)에 올리면 됩니다.
 - 로컬에서 바로 확인: `flutter run -d chrome` (또는 `flutter run -d web-server` 후 브라우저 접속)
 - 웹에서는 SQLite가 WASM(`web/sqlite3.wasm`, `web/sqflite_sw.js`)으로 동작하며, 성경 DB는 첫 실행 시 브라우저 저장소로 복사됩니다.
+- **서버 설치·배포(nginx, wasm MIME 설정, 캐시 초기화 등)는 [WEB_DEPLOY_MANUAL.md](WEB_DEPLOY_MANUAL.md) 참고**
 
 ---
 
@@ -118,7 +119,8 @@ flutter build web --release
 | 빌드가 버전 검사에서 멈춤 | `--android-skip-build-dependency-validation` 플래그 확인 |
 | 앱 업데이트 후 데이터가 옛것 | 앱은 assets를 기기 저장소에 한 번 복사해 쓰는데, 크기가 바뀐 에셋은 자동으로 갱신됨. 이상 시 앱 삭제 후 재설치 |
 | `flutter` 명령 인식 안 됨 | Flutter SDK의 `bin` 폴 더를 PATH에 등록 |
+| **웹에서** `DatabaseException(getDatabasesPath is null)` 또는 `TypeError: null is not a subtype of type 'bool'` | 웹 DB 워커(`sqflite_sw.js`)나 `sqlite3.wasm`이 서버에 없거나(404) 캐시된 오류 상태. ① nginx 루트에 두 파일이 있는지 확인 (`curl -I http://서버/sqlite3.wasm` → 200 필요) ② `build/web/` **전체를** 비우고 다시 업로드 (일부만 올리면 버전이 섞임) ③ 브라우저 서비스 워커 캐시 초기화: Ctrl+Shift+R, 안 되면 DevTools → Application → Service Workers → Unregister 후 재접속 |
 
 ---
 
-최종 수정: 2026-09-20 (웹 DB 경로 오류 수정 — getDatabasesPath 대신 가상FS 상대경로 사용, 안드로이드 빌드 영향 없음. 빌드 절차/에셋 물변경) — 빌드 절차/에셋 무변경, 메뉴얼 내용 동일 유효)
+최종 수정: 2026-09-20 (WEB_DEPLOY_MANUAL.md 신규 추가 — nginx 배포·wasm MIME·서비스워커 캐시 안내, 웹 섹션에 링크)
