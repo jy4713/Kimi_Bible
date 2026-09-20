@@ -192,14 +192,32 @@ class _SettingsBody extends StatelessWidget {
           onTap: () => _importFile(context, SourceType.commentary),
         ),
 
-        // ── 찬송가 목록 ───────────────────────────────────────────────────
+        // ── 찬송가 / 교독문 목록 (별개 관리: 추가·삭제·최소 1개 규칙 각각) ──
         const Divider(),
         _SectionHeader(strings.hymnSources),
-        ..._buildSourceList(context, settings, settings.hymns, SourceType.hymn),
+        ..._buildSourceList(
+          context,
+          settings,
+          settings.hymnalSources,
+          SourceType.hymn,
+        ),
         ListTile(
           leading: const Icon(Icons.add),
           title: Text(strings.addHymnFile),
           onTap: () => _importFile(context, SourceType.hymn),
+        ),
+        const Divider(),
+        _SectionHeader(strings.readingSources),
+        ..._buildSourceList(
+          context,
+          settings,
+          settings.readingSources,
+          SourceType.hymn,
+        ),
+        ListTile(
+          leading: const Icon(Icons.add),
+          title: Text(strings.addReadingFile),
+          onTap: () => _importFile(context, SourceType.hymn, asReading: true),
         ),
         const SizedBox(height: 8),
         Center(
@@ -222,12 +240,9 @@ class _SettingsBody extends StatelessWidget {
     SourceType type,
   ) {
     final strings = AppStrings(settings.appLanguage);
-    final enabledCount = switch (type) {
-      SourceType.bible => settings.enabledBibles.length,
-      SourceType.commentary => settings.enabledCommentaries.length,
-      SourceType.hymn => settings.enabledHymns.length,
-      SourceType.dictionary => 0,
-    };
+    // Count within the passed (already category-filtered) list, so the
+    // "last one cannot be switched off" rule applies per category.
+    final enabledCount = sources.where((s) => s.isEnabled).length;
     return sources.map((src) {
       // The last remaining enabled source of a type cannot be switched off.
       final isLastEnabled = src.isEnabled && enabledCount <= 1;
@@ -294,7 +309,8 @@ class _SettingsBody extends StatelessWidget {
     }
   }
 
-  Future<void> _importFile(BuildContext context, SourceType type) async {
+  Future<void> _importFile(BuildContext context, SourceType type,
+      {bool asReading = false}) async {
     final settings = context.read<SettingsProvider>();
     final bibleProvider = context.read<BibleProvider>();
     final strings = AppStrings(settings.appLanguage);
@@ -352,6 +368,7 @@ class _SettingsBody extends StatelessWidget {
       type: type,
       docPath: destPath,
       companionPath: companionDestPath,
+      isReading: asReading,
     );
 
     if (context.mounted) {

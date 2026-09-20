@@ -43,10 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _screens = [
       const BibleScreen(),
       CompareScreen(key: _compareKey),
-      // Hymnal picker (dropdown); 교독문 is excluded here and gets its own
-      // bottom-nav tab below because its UI differs (lyrics-only).
+      // Hymnal picker (dropdown); both kinds are separate, like Bible vs hymnal.
       const HymnListScreen(),
-      const HymnListScreen(fixedSourceId: '교독문'),
+      const HymnListScreen(readingMode: true),
       CommentaryScreen(key: _commentaryKey),
     ];
   }

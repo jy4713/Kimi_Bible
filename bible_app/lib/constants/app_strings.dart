@@ -98,6 +98,9 @@ class AppStrings {
       isKorean ? '악보 이미지를 불러올 수 없습니다' : 'Unable to load sheet music';
   String get addHymnFile =>
       isKorean ? '찬송가 파일 추가 (.hdb)' : 'Add hymnal file (.hdb)';
+  String get addReadingFile => isKorean
+      ? '교독문 파일 추가 (.hdb)'
+      : 'Add responsive reading file (.hdb)';
   String get cmpCopied => isKorean
       ? '동일한 이름의 .cmp 악보 파일도 추가되었습니다.'
       : 'The matching .cmp sheet-music file was also added.';
@@ -136,6 +139,8 @@ class AppStrings {
       isKorean ? '성경 파일 추가 (.bdb / .sdb)' : 'Add Bible file (.bdb / .sdb)';
   String get commentarySources => isKorean ? '주석' : 'Commentaries';
   String get hymnSources => isKorean ? '찬송가' : 'Hymnals';
+  String get readingSources =>
+      isKorean ? '교독문' : 'Responsive readings';
   String get builtIn => isKorean ? '기본 제공' : 'Built in';
   String deleteSourceConfirm(String name) => isKorean
       ? '$name을(를) 삭제하시겠습니까?\n앱에 복사된 데이터는 삭제되고, 원본 파일은 그대로 남습니다.'

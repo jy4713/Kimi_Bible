@@ -44,6 +44,14 @@ class SettingsProvider with ChangeNotifier {
   List<SourceInfo> get enabledHymns =>
       _hymns.where((s) => s.isEnabled).toList();
 
+  /// 찬송가(교독문 제외) 소스 — 관리/선택 단위가 별개다.
+  List<SourceInfo> get hymnalSources =>
+      _hymns.where((s) => !s.isReading).toList();
+
+  /// 교독문 소스 — 찬송가와 별개로 관리된다.
+  List<SourceInfo> get readingSources =>
+      _hymns.where((s) => s.isReading).toList();
+
   bool canRemoveSource(SourceInfo source) {
     return switch (source.type) {
       SourceType.bible => _bibles.length > 1,
@@ -116,6 +124,10 @@ class SettingsProvider with ChangeNotifier {
     } else {
       _hymns = kBuiltInHymns.map(_copySource).toList();
     }
+    // Entries saved before the hymn/교독문 split lack the isReading flag.
+    for (final s in _hymns) {
+      if (s.id == _readingHymnId) s.isReading = true;
+    }
 
     _ensureProtectedDefaults();
     notifyListeners();
@@ -131,6 +143,7 @@ class SettingsProvider with ChangeNotifier {
         companionPath: source.companionPath,
         isEnabled: source.isEnabled,
         isBuiltIn: source.isBuiltIn,
+        isReading: source.isReading,
       );
 
   void _ensureProtectedDefaults() {
@@ -185,13 +198,21 @@ class SettingsProvider with ChangeNotifier {
   }
 
   Future<bool> toggleSource(SourceInfo source, bool enabled) async {
-    final list = switch (source.type) {
-      SourceType.bible => _bibles,
-      SourceType.commentary => _commentaries,
-      SourceType.hymn => _hymns,
-      SourceType.dictionary => <SourceInfo>[],
-    };
-    if (!enabled && list.where((s) => s.isEnabled).length <= 1) return false;
+    if (!enabled) {
+      // The last ENABLED source of its category cannot be switched off. For
+      // hymnals the categories are separate: at least one 찬송가 AND at least
+      // one 교독문 must stay enabled.
+      final enabledCount = switch (source.type) {
+        SourceType.bible => _bibles.where((s) => s.isEnabled).length,
+        SourceType.commentary =>
+          _commentaries.where((s) => s.isEnabled).length,
+        SourceType.hymn => _hymns
+            .where((s) => s.isEnabled && s.isReading == source.isReading)
+            .length,
+        SourceType.dictionary => 0,
+      };
+      if (enabledCount <= 1) return false;
+    }
 
     source.isEnabled = enabled;
     notifyListeners();

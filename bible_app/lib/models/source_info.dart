@@ -12,6 +12,7 @@ class SourceInfo {
   String companionPath; // copied companion file path, if any
   bool isEnabled;
   final bool isBuiltIn; // bundled with app
+  bool isReading; // hymn sub-category: true = 교독문, false = 찬송가
 
   SourceInfo({
     required this.id,
@@ -23,6 +24,7 @@ class SourceInfo {
     this.companionPath = '',
     this.isEnabled = true,
     this.isBuiltIn = false,
+    this.isReading = false,
   });
 
   String get effectivePath => docPath.isNotEmpty ? docPath : assetPath;
@@ -39,6 +41,7 @@ class SourceInfo {
         'companionPath': companionPath,
         'isEnabled': isEnabled,
         'isBuiltIn': isBuiltIn,
+        'isReading': isReading,
       };
 
   factory SourceInfo.fromJson(Map<String, dynamic> j) => SourceInfo(
@@ -51,6 +54,7 @@ class SourceInfo {
         companionPath: j['companionPath'] as String? ?? '',
         isEnabled: j['isEnabled'] as bool? ?? true,
         isBuiltIn: j['isBuiltIn'] as bool? ?? false,
+        isReading: j['isReading'] as bool? ?? false,
       );
 
   static String encodeList(List<SourceInfo> list) =>
@@ -208,5 +212,6 @@ final List<SourceInfo> kBuiltInHymns = [
     assetPath: 'assets/hymn/교독문.hdb',
     isBuiltIn: true,
     docPath: '',
+    isReading: true,
   ),
 ];

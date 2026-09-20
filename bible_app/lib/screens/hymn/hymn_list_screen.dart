@@ -10,11 +10,12 @@ import '../../widgets/settings_action_button.dart';
 import 'hymn_detail_screen.dart';
 
 class HymnListScreen extends StatefulWidget {
-  /// When set (e.g. '교독문'), this screen is locked to that hymnal source:
-  /// no source dropdown. Used by the separate bottom-nav tab.
-  final String? fixedSourceId;
+  /// The 교독문 bottom-nav tab sets this: the screen then lists 교독문
+  /// sources instead of 찬송가 sources. Both kinds are managed separately
+  /// (settings / DB), like Bible vs hymnal.
+  final bool readingMode;
 
-  const HymnListScreen({super.key, this.fixedSourceId});
+  const HymnListScreen({super.key, this.readingMode = false});
 
   @override
   State<HymnListScreen> createState() => _HymnListScreenState();
@@ -56,16 +57,15 @@ class _HymnListScreenState extends State<HymnListScreen> {
     final settings = context.read<SettingsProvider>();
     final all = settings.enabledHymns;
     List<SourceInfo> hymns;
-    if (widget.fixedSourceId != null) {
-      // Locked tab (교독문): use the enabled entry, falling back to the
-      // built-in definition even if the user disabled it in settings.
-      hymns = all.where((s) => s.id == widget.fixedSourceId).toList();
+    if (widget.readingMode) {
+      hymns = all.where((s) => s.isReading).toList();
+      // The 교독문 tab always shows something: fall back to the built-in
+      // definition even if the user disabled it in settings.
       hymns = hymns.isEmpty
-          ? kBuiltInHymns.where((s) => s.id == widget.fixedSourceId).toList()
+          ? kBuiltInHymns.where((s) => s.isReading).toList()
           : hymns;
     } else {
-      // 교독문 has its own bottom-nav tab; keep it out of the hymnal picker.
-      hymns = all.where((s) => s.id != '교독문').toList();
+      hymns = all.where((s) => !s.isReading).toList();
     }
     if (hymns.isEmpty) {
       setState(() => _loading = false);
@@ -127,9 +127,11 @@ class _HymnListScreenState extends State<HymnListScreen> {
     // 검색 창을 숨긴다.
     final hasCompanion =
         _source?.effectiveCompanionPath.isNotEmpty ?? false;
-    final pickerHymns =
-        settings.enabledHymns.where((s) => s.id != '교독문').toList();
-    final showPicker = widget.fixedSourceId == null && pickerHymns.length > 1;
+    // 같은 종류(찬송가/교독문)가 2개 이상 켜져 있으면 종류 선택 드롭다운 표시.
+    final pickerHymns = widget.readingMode
+        ? settings.enabledHymns.where((s) => s.isReading).toList()
+        : settings.enabledHymns.where((s) => !s.isReading).toList();
+    final showPicker = pickerHymns.length > 1;
     return Scaffold(
       appBar: AppBar(
         title: showPicker
@@ -154,8 +156,8 @@ class _HymnListScreenState extends State<HymnListScreen> {
                   },
                 ),
               )
-            : Text(widget.fixedSourceId != null
-                ? (_source?.name ?? strings.responsiveReading)
+            : Text(widget.readingMode
+                ? strings.responsiveReading
                 : strings.hymns),
         actions: const [SettingsActionButton()],
         bottom: hasCompanion
