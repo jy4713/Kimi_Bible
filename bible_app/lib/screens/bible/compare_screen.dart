@@ -7,6 +7,7 @@ import '../../models/source_info.dart';
 import '../../providers/bible_provider.dart';
 import '../../providers/compare_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../repositories/bible_repository.dart';
 import '_book_selector_dialog.dart';
 import '_translation_selector.dart';
 import '../../widgets/settings_action_button.dart';
@@ -44,15 +45,19 @@ class CompareScreenState extends State<CompareScreen> {
     final bible = context.read<BibleProvider>();
     final sources = context.read<SettingsProvider>().enabledBibles;
     final cmp = context.read<CompareProvider>();
-    _pendingVerse = bible.visibleVerse;
+    final v = bible.visibleVerse;
     await cmp.syncTo(sources, bible.book, bible.chapter);
-    if (!mounted || _pendingVerse == null) return;
-    final v = _pendingVerse!;
-    // Let the (possibly new) list build first, then jump near the verse so
-    // its item gets built, then align it precisely at the top.
+    if (!mounted) return;
+    _scrollToVerse(cmp, v);
+  }
+
+  /// Jump the list so verse [v] sits at the top. Runs post-frame (with
+  /// estimates + ensureVisible) so it works right after a rebuild/navigate.
+  void _scrollToVerse(CompareProvider cmp, int v) {
+    _pendingVerse = v;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 80));
-      if (!mounted) return;
+      if (!mounted || _pendingVerse != v) return;
       final estH = (cmp.axis == Axis.horizontal ? 110.0 : 150.0);
       if (_scroll.hasClients) {
         final target = ((v - 1) * estH)
@@ -60,7 +65,7 @@ class CompareScreenState extends State<CompareScreen> {
         _scroll.jumpTo(target);
       }
       await Future<void>.delayed(const Duration(milliseconds: 80));
-      if (!mounted) return;
+      if (!mounted || _pendingVerse != v) return;
       final ctx = _verseKeys[v]?.currentContext;
       if (ctx != null) {
         await Scrollable.ensureVisible(ctx,
@@ -128,17 +133,42 @@ class CompareScreenState extends State<CompareScreen> {
 
   Future<void> _selectBook(
       CompareProvider cmp, List<SourceInfo> sources) async {
+    // Verse counts come from the first currently-selected translation.
+    SourceInfo? src;
+    for (final id in cmp.selectedIds) {
+      if (sources.any((s) => s.id == id)) {
+        src = sources.firstWhere((s) => s.id == id);
+        break;
+      }
+    }
     final result = await showDialog<Map<String, int>>(
       context: context,
       builder: (_) => BookSelectorDialog(
         currentBook: cmp.book,
         currentChapter: cmp.chapter,
+        currentVerse: _pendingVerse ?? 1,
+        verseCountProvider: src == null
+            ? null
+            : (b, c) => BibleRepository.instance.maxVerse(src!, b, c),
       ),
     );
     if (result != null && mounted) {
-      _pendingVerse = null;
+      final book = result['book']!;
+      final chapter = result['chapter']!;
+      final verse = result['verse'];
+      if (book == cmp.book && chapter == cmp.chapter) {
+        // Same chapter: just scroll to the chosen verse.
+        if (verse != null) _scrollToVerse(cmp, verse);
+        return;
+      }
       _verseKeys.clear();
-      cmp.navigate(sources, result['book']!, result['chapter']!);
+      if (verse != null) {
+        // Keep the pending-verse scroll target across the rebuild.
+        _scrollToVerse(cmp, verse);
+      } else {
+        _pendingVerse = null;
+      }
+      cmp.navigate(sources, book, chapter);
     }
   }
 
@@ -150,6 +180,8 @@ class CompareScreenState extends State<CompareScreen> {
       allSources: sources,
       selectedIds: cmp.selectedIds,
       strings: strings,
+      // Live-apply (debounced in the sheet) — no Apply button.
+      onSelectionChanged: (newIds) => cmp.setSelectedIds(newIds, sources),
     );
     if (ids != null && mounted) {
       await cmp.setSelectedIds(ids, sources);
@@ -301,15 +333,21 @@ class _CompareVerseList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: 28,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: Text(
-                    '$verseNumber',
-                    style: TextStyle(
-                      fontSize: fontSize * 0.8,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+                width: 30,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 2),
+                    child: Text(
+                      '$verseNumber',
+                      maxLines: 1,
+                      softWrap: false,
+                      style: TextStyle(
+                        fontSize: fontSize * 0.8,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
                 ),

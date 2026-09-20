@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../constants/app_strings.dart';
@@ -25,11 +27,15 @@ Future<String?> showTranslationPicker(
 }
 
 /// Bottom-sheet that lets the user pick MULTIPLE translations for comparison.
+/// Selection is applied LIVE via [onSelectionChanged] (debounced) — there is
+/// no Apply button. The returned value is the final selection when the sheet
+/// closes, for callers that still want it.
 Future<List<String>?> showCompareTranslationPicker(
   BuildContext context, {
   required List<SourceInfo> allSources,
   required List<String> selectedIds,
   required AppStrings strings,
+  ValueChanged<List<String>>? onSelectionChanged,
 }) async {
   return showModalBottomSheet<List<String>>(
     context: context,
@@ -41,6 +47,7 @@ Future<List<String>?> showCompareTranslationPicker(
       title: strings.compareTranslationSelection,
       hint: strings.compareSelectionHint,
       strings: strings,
+      onSelectionChanged: onSelectionChanged,
     ),
   );
 }
@@ -52,6 +59,7 @@ class _TranslationPickerSheet extends StatefulWidget {
   final String title;
   final String hint;
   final AppStrings strings;
+  final ValueChanged<List<String>>? onSelectionChanged;
 
   const _TranslationPickerSheet({
     required this.allSources,
@@ -60,6 +68,7 @@ class _TranslationPickerSheet extends StatefulWidget {
     required this.title,
     required this.hint,
     required this.strings,
+    this.onSelectionChanged,
   });
 
   @override
@@ -69,6 +78,13 @@ class _TranslationPickerSheet extends StatefulWidget {
 
 class _TranslationPickerSheetState extends State<_TranslationPickerSheet> {
   late List<String> _selected;
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -95,6 +111,13 @@ class _TranslationPickerSheetState extends State<_TranslationPickerSheet> {
         _selected.add(id);
       }
     });
+    final cb = widget.onSelectionChanged;
+    if (cb != null) {
+      _debounce?.cancel();
+      _debounce = Timer(const Duration(milliseconds: 300), () {
+        cb(List.from(_selected));
+      });
+    }
   }
 
   @override
@@ -119,11 +142,6 @@ class _TranslationPickerSheetState extends State<_TranslationPickerSheet> {
                         ),
                   ),
                 ),
-                if (widget.maxCount > 1)
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, _selected),
-                    child: Text(widget.strings.apply),
-                  ),
               ],
             ),
           ),
