@@ -85,11 +85,42 @@ sudo nginx -t && sudo nginx -s reload
 
 ---
 
-## 6. 배포 확인 (서버에서)
+## 6. HTTPS 적용 (DuckDNS + Let's Encrypt, 권장)
+
+`https://`를 쓰면 "Not secure" 경고가 사라지고 서비스 워커/앱 설치(PWA) 기능이 정상 동작합니다. 도메인이 없어도 **DuckDNS** 물로 도메인으로 가능합니다.
+
+**1. DuckDNS에 도메인 등록** — [duckdns.org](https://www.duckdns.org)에서 Google/GitHub 계정으로 로그인 → 서브도메인 입력(예: `choibible`) → current IP에 서버 IP(`168.107.53.70`) 입력 → **update ip**
+
+**2. DNS 연결 확인** (서버에서)
+```bash
+nslookup choibible.duckdns.org    # → 서버 IP가 나오면 OK
+```
+
+**3. 인증서 발급** (nginx 설정까지 자동 처리)
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d choibible.duckdns.org
+```
+- 이메일 입력 → 약관 동의(Y) → Redirect 물어보면 **2** 선택 (http → https 자동 전환)
+
+**4. 443 포트 개방** — 보안 그룹 인바운드 443 추가, 서버 방화벽 사용 시 `sudo ufw allow 443/tcp`
+
+**5. 확인**
+```bash
+sudo certbot certificates        # VALID 여부와 만료일(89일) 확인
+```
+- 인증서는 90일짜리지만 certbot 자동 갱신이 기본 활성화됩니다
+- 재발급 시험: `sudo certbot renew --dry-run`
+- 이후 접속 주소: **`https://choibible.duckdns.org`** (http://IP 접속도 계속 됩니다)
+
+---
+
+## 7. 배포 확인 (서버에서)
 
 ```bash
 # 세 개 모두 확인하세요
 curl -I http://서버IP/ | grep -i "HTTP/"                          # → HTTP/1.1 200 OK
+curl -I https://난도메인.duckdns.org/ | grep -i "HTTP/"             # HTTPS 적용 시: 200 OK (자물쇠 확인)
 curl -I http://서버IP/sqlite3.wasm | grep -i content-type         # → application/wasm  ← 필수!
 curl -I http://서버IP/sqflite_sw.js | grep -i content-type        # → javascript 계열
 ```
@@ -98,7 +129,7 @@ curl -I http://서버IP/sqflite_sw.js | grep -i content-type        # → javasc
 
 ---
 
-## 7. 브라우저에서 확인할 때 주의
+## 8. 브라우저에서 확인할 때 주의
 
 - **첫 로딩은 느릴 수 있습니다** — 성경 DB를 브라우저 저장소(IndexedDB)로 복사하는 시간이 필요합니다. 두 번째부터는 빠릅니다.
 - 재배포 후에도 예전 화면이 남아 있으면 **서비스 워커 캐시** 때문입니다:
@@ -109,7 +140,7 @@ curl -I http://서버IP/sqflite_sw.js | grep -i content-type        # → javasc
 
 ---
 
-## 8. 재배포 절차 (앱 업데이트 시)
+## 9. 재배포 절차 (앱 업데이트 시)
 
 1. PC에서: `git pull` → `flutter build web --release`
 2. 서버에 `build/web/` **전체를** 다시 올리기 (기존 파일 삭제 후)
@@ -118,7 +149,7 @@ curl -I http://서버IP/sqflite_sw.js | grep -i content-type        # → javasc
 
 ---
 
-## 9. 트러블슈팅
+## 10. 트러블슈팅
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
@@ -130,4 +161,4 @@ curl -I http://서버IP/sqflite_sw.js | grep -i content-type        # → javasc
 
 ---
 
-최종 수정: 2026-09-20 (최초 작성 — nginx wasm MIME 설정, 서비스 워커 캐시 주의 포함)
+최종 수정: 2026-09-20 (HTTPS 절 추가 — DuckDNS + Let's Encrypt/certbot 절차, 443 포트)
