@@ -68,8 +68,9 @@ class DatabaseHelper {
 
   Future<Database> _openAssetWeb(String assetPath) async {
     final fileName = p.basename(assetPath);
-    final dbPath = await getDatabasesPath();
-    final filePath = p.posix.join(dbPath, fileName);
+    // sqflite_common_ffi_web uses a virtual FS where any relative path works;
+    // getDatabasesPath() is unsupported (null) on web.
+    final filePath = p.posix.join('bible_db', fileName);
 
     if (_cache.containsKey(filePath) && (_cache[filePath]?.isOpen ?? false)) {
       return _cache[filePath]!;

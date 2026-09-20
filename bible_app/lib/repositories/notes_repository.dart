@@ -22,9 +22,10 @@ class NotesRepository {
     if (current != null && current.isOpen) return current;
 
     if (kIsWeb) {
-      final dbPath = await getDatabasesPath();
+      // Web: virtual FS — any relative path works (getDatabasesPath is
+      // unsupported there).
       _db = await openDatabase(
-        p.join(dbPath, _dbName),
+        p.posix.join('bible_db', _dbName),
         version: 1,
         onCreate: _onCreate,
       );
