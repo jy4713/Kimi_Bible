@@ -20,7 +20,7 @@ class SettingsProvider with ChangeNotifier {
   static const _readingHymnId = '교독문'; // protected like the default hymnal
 
   double _fontSize = 16.0; // Bible / commentary content text
-  double _uiFontPct = 100.0; // menus, titles, buttons (90–110 % of default)
+  double _uiFontPct = 100.0; // menus, titles, buttons (70–130 % of default)
   ThemeMode _themeMode = ThemeMode.system;
   AppLanguage _language = AppLanguage.korean;
   bool _keepScreenOn = false; // 화면 꺼짐 방지 (기본값: 시스템 설정 따름)
@@ -181,7 +181,7 @@ class SettingsProvider with ChangeNotifier {
   }
 
   Future<void> setUiFontSize(double pct) async {
-    _uiFontPct = pct.clamp(90.0, 110.0);
+    _uiFontPct = pct.clamp(70.0, 130.0);
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_kUiFontPct, _uiFontPct);

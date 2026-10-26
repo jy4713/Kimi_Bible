@@ -122,11 +122,14 @@ class AppStrings {
   String get fontSize => isKorean ? '본문 글자 크기' : 'Content font size';
   String get menuFontSize => isKorean ? '메뉴 글자 크기' : 'Menu font size';
   String get menuFontHint => isKorean
-      ? '메뉴·제목·버튼 등 화면 UI 글자 크기 (기본값의 90~110%)'
-      : 'Size of menus, titles and buttons (90–110% of default)';
+      ? '메뉴·제목·버튼 등 화면 UI 글자 크기 (기본값의 70~130%)'
+      : 'Size of menus, titles and buttons (70–130% of default)';
   String get fontPreview => isKorean
       ? '태초에 하나님이 천지를 창조하시니라. (창 1:1)'
       : 'In the beginning God created the heaven and the earth. (Genesis 1:1)';
+  String get pressBackAgainToExit => isKorean
+      ? '뒤로가기를 한 번 더 누르면 앱이 종료됩니다'
+      : 'Press back again to exit';
   String get theme => isKorean ? '테마' : 'Theme';
   String get systemTheme => isKorean ? '시스템 설정' : 'System';
   String get lightTheme => isKorean ? '밝은 테마' : 'Light';

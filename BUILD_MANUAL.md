@@ -48,10 +48,13 @@ flutter pub get
 ## 3. Android APK 만들기
 
 ```bash
-cd Kimi_Bible/bible_app
+cd Kimi_Bible            # 저장소 루트 — 버전 라벨 먼저 갱신
+python bump_version.py   # → kBuildVersion = (YYYYMMDD.vN), 그날 빌드 횟수+1
+cd bible_app
 flutter build apk --release --android-skip-build-dependency-validation
 ```
 
+- **빌드 전에 반드시 `python bump_version.py`를 먼저 실행하세요.** 설정 화면 맨 아래 "최준영 제작" 옆의 버전 라벨 `(YYYYMMDD.vN)`이 자동으로 갱신됩니다. 카운터는 저장소 루트의 `apk_build_counter.txt`에 저장됩니다.
 - 산출물: `bible_app/build/app/outputs/flutter-apk/app-release.apk` (약 195 MB)
 - `--android-skip-build-dependency-validation`: 프로젝트 플러그인 버전 조합에 대한 경고 검사를 걸러주는 플래그. **그대로 사용하세요** (없으면 빌드가 막힐 수 있음).
 - 첫 빌드는 Gradle 다운로드/컴파일로 **5~10분** 걸리고, 이후는 3~5분 정도입니다.

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../constants/app_strings.dart';
+import '../../constants/build_info.dart';
 import '../../models/source_info.dart';
 import '../../providers/bible_provider.dart';
 import '../../providers/compare_provider.dart';
@@ -41,13 +42,14 @@ class _SettingsBody extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Text(strings.menuFontSize),
+              Text(strings.menuFontSize,
+                  style: Theme.of(context).textTheme.titleMedium),
               Expanded(
                 child: Slider(
                   value: settings.uiFontPct,
-                  min: 90,
-                  max: 110,
-                  divisions: 20,
+                  min: 70,
+                  max: 130,
+                  divisions: 60,
                   label: '${settings.uiFontPct.round()}%',
                   onChanged: settings.setUiFontSize,
                 ),
@@ -76,7 +78,8 @@ class _SettingsBody extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              Text(strings.fontSize),
+              Text(strings.fontSize,
+                  style: Theme.of(context).textTheme.titleMedium),
               Expanded(
                 child: Slider(
                   value: settings.fontSize,
@@ -240,7 +243,7 @@ class _SettingsBody extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 24),
             child: Text(
-              strings.madeBy,
+              '${strings.madeBy}$kBuildVersion',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../constants/app_strings.dart';
@@ -17,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
+  DateTime? _lastBackPress;
   final _commentaryKey = GlobalKey<CommentaryScreenState>();
   final _compareKey = GlobalKey<CompareScreenState>();
 
@@ -62,14 +64,39 @@ class _HomeScreenState extends State<HomeScreen> {
       strings.commentary
     ];
 
-    return Scaffold(
+    return PopScope(
+      // 첫 번째 뒤로가기는 토스트로 안내하고, 2초 안에 두 번째 누르면 앱을 종료한다.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_index != 0) {
+          setState(() => _index = 0);
+          return;
+        }
+        final now = DateTime.now();
+        if (_lastBackPress != null &&
+            now.difference(_lastBackPress!) < const Duration(seconds: 2)) {
+          SystemNavigator.pop();
+          return;
+        }
+        _lastBackPress = now;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(strings.pressBackAgainToExit),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      child: Scaffold(
       body: IndexedStack(
         index: _index,
         children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
         height: 62,
-        labelTextStyle: WidgetStateProperty.all(const TextStyle(fontSize: 11)),
+        labelTextStyle: WidgetStateProperty.all(
+          TextStyle(fontSize: 12 * settings.uiScale),
+        ),
         selectedIndex: _index,
         onDestinationSelected: (i) {
           setState(() => _index = i);
@@ -93,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
               label: labels[i],
             ),
         ],
+      ),
       ),
     );
   }

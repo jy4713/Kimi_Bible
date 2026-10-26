@@ -12,7 +12,7 @@ class BibleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
-    final uiScale = settings.uiScale.clamp(0.9, 1.1);
+    final uiScale = settings.uiScale.clamp(0.7, 1.3);
 
     return MaterialApp(
       title: AppStrings(settings.appLanguage).appTitle,
