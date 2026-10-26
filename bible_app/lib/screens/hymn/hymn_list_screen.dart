@@ -206,7 +206,7 @@ class _HymnListScreenState extends State<HymnListScreen> {
                     crossAxisCount: 3,
                     // Slim tiles (~2/3 height); titles ellipsis after 2 lines.
                     // Ratio keeps two scaled title lines (up to 130%) inside.
-                    childAspectRatio: 1.8,
+                    childAspectRatio: 1.65,
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 4,
                   ),
@@ -248,7 +248,7 @@ class _HymnCard extends StatelessWidget {
               '${hymn.chapter}',
               style: TextStyle(
                 fontSize: 14 * uiScale,
-                height: 1.0,
+                height: 1.1,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.primary,
               ),
@@ -258,7 +258,7 @@ class _HymnCard extends StatelessWidget {
               hymn.plainTitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12 * uiScale, height: 1.05),
+              style: TextStyle(fontSize: 12 * uiScale, height: 1.3),
             ),
           ],
         ),
