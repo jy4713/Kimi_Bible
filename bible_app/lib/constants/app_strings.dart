@@ -131,6 +131,12 @@ class AppStrings {
   String get systemTheme => isKorean ? '시스템 설정' : 'System';
   String get lightTheme => isKorean ? '밝은 테마' : 'Light';
   String get darkTheme => isKorean ? '어두운 테마' : 'Dark';
+  String get display => isKorean ? '화면' : 'Display';
+  String get keepScreenOn =>
+      isKorean ? '성경 읽는 동안 계속 켜있기' : 'Keep screen on while reading';
+  String get keepScreenOnHint => isKorean
+      ? '켜두면 앱을 사용하는 동안 화면이 꺼지지 않습니다. 꺼두면 기기 설정 시간에 따라 꺼집니다.'
+      : 'When on, the screen stays awake while the app is open. When off, the device screen-timeout applies.';
   String get language => isKorean ? '언어' : 'Language';
   String get koreanLanguage => isKorean ? '한국어' : 'Korean';
   String get englishLanguage => isKorean ? '영어' : 'English';
@@ -183,7 +189,7 @@ class AppStrings {
   String get importNotes =>
       isKorean ? '노트 가져오기 (CSV)' : 'Import notes (CSV)';
   String notesExported(String path) => isKorean
-      ? '노트를 내보내어습니다:\n$path'
+      ? '노트를 내보냈습니다:\n$path'
       : 'Notes exported to:\n$path';
   String notesImported(int count) => isKorean
       ? '$count개의 노트를 가져왔습니다.'

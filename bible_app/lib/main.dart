@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app.dart';
 import 'providers/bible_provider.dart';
@@ -15,6 +16,9 @@ Future<void> main() async {
 
   final settings = SettingsProvider();
   await settings.init();
+
+  // 화면 꺼짐 방지 설정 적용 — ON이면 앱 사용 중 화면이 꺼지지 않는다.
+  await WakelockPlus.toggle(enable: settings.keepScreenOn);
 
   final bible = BibleProvider();
   await bible.init();

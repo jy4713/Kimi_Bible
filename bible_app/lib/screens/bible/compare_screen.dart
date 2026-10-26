@@ -172,6 +172,67 @@ class CompareScreenState extends State<CompareScreen> {
     }
   }
 
+  /// First currently-selected translation (used for verse counts).
+  SourceInfo? _firstSelectedSource(
+      CompareProvider cmp, List<SourceInfo> sources) {
+    for (final id in cmp.selectedIds) {
+      if (sources.any((s) => s.id == id)) {
+        return sources.firstWhere((s) => s.id == id);
+      }
+    }
+    return null;
+  }
+
+  /// Chapter-button handler: chapter grid of the CURRENT book, then verse.
+  Future<void> _selectChapter(
+      CompareProvider cmp, List<SourceInfo> sources) async {
+    final src = _firstSelectedSource(cmp, sources);
+    final result = await showChapterVersePicker(
+      context,
+      book: bookInfoOf(cmp.book),
+      currentChapter: cmp.chapter,
+      verseCountProvider: src == null
+          ? null
+          : (b, c) => BibleRepository.instance.maxVerse(src, b, c),
+      currentVerse: _pendingVerse ?? 1,
+    );
+    if (result != null && mounted) {
+      final chapter = result['chapter']!;
+      final verse = result['verse'];
+      if (chapter == cmp.chapter) {
+        // Same chapter: just scroll to the chosen verse.
+        if (verse != null) _scrollToVerse(cmp, verse);
+        return;
+      }
+      _verseKeys.clear();
+      if (verse != null) {
+        // Keep the pending-verse scroll target across the rebuild.
+        _scrollToVerse(cmp, verse);
+      } else {
+        _pendingVerse = null;
+      }
+      cmp.navigate(sources, cmp.book, chapter);
+    }
+  }
+
+  /// Verse-button handler: verse grid of the current chapter only.
+  Future<void> _selectVerseOnly(
+      CompareProvider cmp, List<SourceInfo> sources) async {
+    final src = _firstSelectedSource(cmp, sources);
+    if (src == null) return;
+    final verseCount =
+        await BibleRepository.instance.maxVerse(src, cmp.book, cmp.chapter);
+    if (!mounted || verseCount <= 0) return;
+    final v = await showDialog<int>(
+      context: context,
+      builder: (_) => VerseSelectorDialog(
+        verseCount: verseCount,
+        currentVerse: _pendingVerse ?? 1,
+      ),
+    );
+    if (v != null && mounted) _scrollToVerse(cmp, v);
+  }
+
   Future<void> _selectTranslations(
       CompareProvider cmp, List<SourceInfo> sources) async {
     final strings = AppStrings(context.read<SettingsProvider>().appLanguage);
@@ -207,20 +268,57 @@ class CompareScreenState extends State<CompareScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Book: book -> chapter -> verse selection flow.
             Flexible(
               child: TextButton(
                 onPressed:
                     sources.isEmpty ? null : () => _selectBook(cmp, sources),
                 style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                 child: Text(
-                  '${strings.bookLabel(korean: bookInfo.korean, english: bookInfo.english)}  ${strings.chapterLabel(cmp.chapter)}',
+                  strings.bookLabel(
+                      korean: bookInfo.korean, english: bookInfo.english),
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
+              ),
+            ),
+            // Chapter: chapter -> verse selection flow.
+            TextButton(
+              onPressed:
+                  sources.isEmpty ? null : () => _selectChapter(cmp, sources),
+              style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              child: Text(
+                strings.chapterLabel(cmp.chapter),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            // Verse: verse-only selection (scrolls within the chapter).
+            TextButton(
+              onPressed: sources.isEmpty
+                  ? null
+                  : () => _selectVerseOnly(cmp, sources),
+              style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              child: Text(
+                strings.verseLabel(_pendingVerse ?? 1),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             IconButton(

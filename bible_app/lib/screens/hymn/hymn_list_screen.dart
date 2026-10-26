@@ -104,17 +104,12 @@ class _HymnListScreenState extends State<HymnListScreen> {
 
   void _openHymn(int chapter) {
     if (_source == null) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => HymnDetailScreen(
-          source: _source!,
-          initialChapter: chapter,
-          allHymns: _allHymns,
-        ),
-      ),
-    );
+    // Show the detail INSIDE this tab (state change, no Navigator.push) so
+    // the bottom navigation bar stays visible while reading.
+    setState(() => _openChapter = chapter);
   }
+
+  int? _openChapter;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +127,17 @@ class _HymnListScreenState extends State<HymnListScreen> {
         ? settings.enabledHymns.where((s) => s.isReading).toList()
         : settings.enabledHymns.where((s) => !s.isReading).toList();
     final showPicker = pickerHymns.length > 1;
+    // Show the detail INSIDE this tab (no Navigator.push) so the bottom
+    // navigation bar stays visible while reading.
+    final openChapter = _openChapter;
+    if (openChapter != null && _source != null && !_loading) {
+      return HymnDetailScreen(
+        source: _source!,
+        initialChapter: openChapter,
+        allHymns: _allHymns,
+        onClose: () => setState(() => _openChapter = null),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: showPicker

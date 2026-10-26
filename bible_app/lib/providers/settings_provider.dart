@@ -11,6 +11,7 @@ class SettingsProvider with ChangeNotifier {
   static const _kUiFontPct = 'uiFontPct';
   static const _kThemeMode = 'themeMode';
   static const _kLanguage = 'appLanguage';
+  static const _kKeepScreenOn = 'keepScreenOn';
   static const _kBibles = 'bibles';
   static const _kCommentaries = 'commentaries';
   static const _kHymns = 'hymns';
@@ -22,6 +23,7 @@ class SettingsProvider with ChangeNotifier {
   double _uiFontPct = 100.0; // menus, titles, buttons (90–110 % of default)
   ThemeMode _themeMode = ThemeMode.system;
   AppLanguage _language = AppLanguage.korean;
+  bool _keepScreenOn = false; // 화면 꺼짐 방지 (기본값: 시스템 설정 따름)
   List<SourceInfo> _bibles = [];
   List<SourceInfo> _commentaries = [];
   List<SourceInfo> _hymns = [];
@@ -31,6 +33,7 @@ class SettingsProvider with ChangeNotifier {
   double get uiScale => _uiFontPct / 100.0;
   ThemeMode get themeMode => _themeMode;
   AppLanguage get appLanguage => _language;
+  bool get keepScreenOn => _keepScreenOn;
   List<SourceInfo> get bibles => _bibles;
   List<SourceInfo> get commentaries => _commentaries;
   List<SourceInfo> get hymns => _hymns;
@@ -71,6 +74,7 @@ class SettingsProvider with ChangeNotifier {
     final languageIndex = prefs.getInt(_kLanguage) ?? AppLanguage.korean.index;
     _language = AppLanguage
         .values[languageIndex.clamp(0, AppLanguage.values.length - 1)];
+    _keepScreenOn = prefs.getBool(_kKeepScreenOn) ?? false;
 
     final biblesJson = prefs.getString(_kBibles);
     if (biblesJson != null && biblesJson.isNotEmpty) {
@@ -195,6 +199,16 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kLanguage, language.index);
+  }
+
+  /// 화면 꺼짐 방지 on/off. ON이면 앱 사용 중 화면이 꺼지지 않고, OFF면 기기
+  /// 시스템의 화면 꺼짐 시간 설정을 따른다. 실제 적용은 main.dart 초기화와
+  /// 설정 화면의 스위치에서 WakelockPlus로 처리한다.
+  Future<void> setKeepScreenOn(bool value) async {
+    _keepScreenOn = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kKeepScreenOn, value);
   }
 
   Future<bool> toggleSource(SourceInfo source, bool enabled) async {

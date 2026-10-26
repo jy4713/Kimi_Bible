@@ -15,11 +15,17 @@ class HymnDetailScreen extends StatefulWidget {
   final int initialChapter;
   final List<HymnEntry> allHymns;
 
+  /// When set, the screen is embedded inside the hymn tab (so the bottom
+  /// navigation stays visible) and this callback replaces Navigator.pop for
+  /// the back button. When null, the screen works as a pushed route as before.
+  final VoidCallback? onClose;
+
   const HymnDetailScreen({
     super.key,
     required this.source,
     required this.initialChapter,
     required this.allHymns,
+    this.onClose,
   });
 
   @override
@@ -126,6 +132,13 @@ class _HymnDetailScreenState extends State<HymnDetailScreen>
 
     return Scaffold(
       appBar: AppBar(
+        // Embedded mode (inside the tab) has no route to pop — use onClose.
+        leading: widget.onClose == null
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: widget.onClose,
+              ),
         title: Text(title),
         bottom: hasSheetMusic
             ? TabBar(

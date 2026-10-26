@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../constants/app_strings.dart';
 import '../../models/source_info.dart';
@@ -154,6 +155,21 @@ class _SettingsBody extends StatelessWidget {
               ),
             ],
           ),
+        ),
+
+        // ── 화면 ─────────────────────────────────────────────────────────
+        const Divider(),
+        _SectionHeader(strings.display),
+        SwitchListTile(
+          secondary: const Icon(Icons.lightbulb_outline),
+          title: Text(strings.keepScreenOn),
+          subtitle: Text(strings.keepScreenOnHint),
+          value: settings.keepScreenOn,
+          onChanged: (v) async {
+            await settings.setKeepScreenOn(v);
+            // 즉시 적용: ON이면 앱 사용 중 화면이 꺼지지 않는다.
+            await WakelockPlus.toggle(enable: v);
+          },
         ),
 
         // ── 노트 ─────────────────────────────────────────────────────────

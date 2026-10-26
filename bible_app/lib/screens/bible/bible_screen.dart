@@ -116,6 +116,32 @@ class _BibleScreenState extends State<BibleScreen> {
     }
   }
 
+  /// Chapter-button handler: opens the chapter grid of the CURRENT book
+  /// (followed by the verse grid), not the book list.
+  Future<void> _selectChapter(
+      BibleProvider bible, List<SourceInfo> sources) async {
+    SourceInfo? src;
+    if (bible.selectedId != null && sources.any((s) => s.id == bible.selectedId)) {
+      src = sources.firstWhere((s) => s.id == bible.selectedId);
+    } else if (sources.isNotEmpty) {
+      src = sources.first;
+    }
+    final result = await showChapterVersePicker(
+      context,
+      book: bookInfoOf(bible.book),
+      currentChapter: bible.chapter,
+      verseCountProvider: src == null
+          ? null
+          : (b, c) => BibleRepository.instance.maxVerse(src!, b, c),
+      currentVerse: bible.visibleVerse,
+    );
+    if (result != null && mounted) {
+      _exitSelection();
+      bible.navigate(sources, bible.book, result['chapter']!,
+          verseIndex: (result['verse'] ?? 1) - 1);
+    }
+  }
+
   Future<void> _selectVerse(
       BibleProvider bible, List<SourceInfo> sources) async {
     final verse = await showDialog<int>(
@@ -413,7 +439,7 @@ class _BibleScreenState extends State<BibleScreen> {
     }
 
     const buttonPad = 12.0; // horizontal padding per _HeaderButton
-    const extraW = buttonPad * 4 + 8 * 3 + 96; // paddings + ' · ' + chevrons
+    const extraW = buttonPad * 4 + 14 * 3 + 96; // paddings + ' · '×3 + chevrons
     final contentsW = measure(trName) +
         measure(bookKE) +
         measure(chLabel) +
@@ -431,9 +457,14 @@ class _BibleScreenState extends State<BibleScreen> {
           sources.isEmpty ? null : () => _selectTranslation(bible, sources),
     );
     final bookBtnOneLine = _HeaderButton(
-      label: '$bookKE $chLabel',
+      label: bookKE,
       onPressed:
           sources.isEmpty ? null : () => _selectBook(bible, sources),
+    );
+    final chapterBtnOneLine = _HeaderButton(
+      label: chLabel,
+      onPressed:
+          sources.isEmpty ? null : () => _selectChapter(bible, sources),
     );
     final bookBtnTwoLine = _HeaderButton(
       label: bookKE,
@@ -443,7 +474,7 @@ class _BibleScreenState extends State<BibleScreen> {
     final chapterBtn = _HeaderButton(
       label: chLabel,
       onPressed:
-          sources.isEmpty ? null : () => _selectBook(bible, sources),
+          sources.isEmpty ? null : () => _selectChapter(bible, sources),
     );
     final verseBtn = _HeaderButton(
       label: vLabel,
@@ -473,6 +504,8 @@ class _BibleScreenState extends State<BibleScreen> {
                   translationBtn,
                   _HeaderDivider(),
                   bookBtnOneLine,
+                  _HeaderDivider(),
+                  chapterBtnOneLine,
                   _HeaderDivider(),
                   verseBtn,
                   const SizedBox(width: 2),

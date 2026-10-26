@@ -131,9 +131,45 @@ class _BookSelectorDialogState extends State<BookSelectorDialog>
   }
 }
 
+/// Picks a chapter of [book], optionally followed by a verse pick.
+/// Returns `{'chapter': c}` or `{'chapter': c, 'verse': v}`; null on cancel.
+/// Used by the chapter button in the reader / compare headers so tapping
+/// "21장" opens the chapter grid directly instead of the book list.
+Future<Map<String, int>?> showChapterVersePicker(
+  BuildContext context, {
+  required BookInfo book,
+  required int currentChapter,
+  Future<int?> Function(int book, int chapter)? verseCountProvider,
+  int currentVerse = 1,
+}) async {
+  final chapter = await showDialog<int>(
+    context: context,
+    builder: (_) =>
+        _ChapterDialog(book: book, currentChapter: currentChapter),
+  );
+  if (chapter == null || !context.mounted) return null;
+
+  if (verseCountProvider != null) {
+    final verseCount = await verseCountProvider(book.number, chapter);
+    if (!context.mounted) return null;
+    if (verseCount != null && verseCount > 0) {
+      final isCurrentLoc = chapter == currentChapter;
+      final verse = await showDialog<int>(
+        context: context,
+        builder: (_) => VerseSelectorDialog(
+          verseCount: verseCount,
+          currentVerse: isCurrentLoc ? currentVerse : 1,
+        ),
+      );
+      if (!context.mounted) return null;
+      return {'chapter': chapter, if (verse != null) 'verse': verse};
+    }
+  }
+  return {'chapter': chapter};
+}
+
 /// Grid dialog for picking a verse within the current chapter.
-class VerseSelectorDialog extends StatelessWidget {
-  final int verseCount;
+class VerseSelectorDialog extends StatelessWidget {  final int verseCount;
   final int currentVerse;
 
   const VerseSelectorDialog({

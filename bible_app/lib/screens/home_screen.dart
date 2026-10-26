@@ -68,6 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: _screens,
       ),
       bottomNavigationBar: NavigationBar(
+        height: 62,
+        labelTextStyle: WidgetStateProperty.all(const TextStyle(fontSize: 11)),
         selectedIndex: _index,
         onDestinationSelected: (i) {
           setState(() => _index = i);
@@ -86,8 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
         destinations: [
           for (int i = 0; i < labels.length; i++)
             NavigationDestination(
-              icon: Icon(_icons[i]),
-              selectedIcon: Icon(_selectedIcons[i]),
+              icon: Icon(_icons[i], size: 22),
+              selectedIcon: Icon(_selectedIcons[i], size: 22),
               label: labels[i],
             ),
         ],
