@@ -205,7 +205,8 @@ class _HymnListScreenState extends State<HymnListScreen> {
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     // Slim tiles (~2/3 height); titles ellipsis after 2 lines.
-                    childAspectRatio: 2.0,
+                    // Ratio keeps two scaled title lines (up to 130%) inside.
+                    childAspectRatio: 1.8,
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 4,
                   ),
@@ -233,7 +234,7 @@ class _HymnCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -247,15 +248,17 @@ class _HymnCard extends StatelessWidget {
               '${hymn.chapter}',
               style: TextStyle(
                 fontSize: 14 * uiScale,
+                height: 1.0,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               hymn.plainTitle,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12 * uiScale),
+              style: TextStyle(fontSize: 12 * uiScale, height: 1.05),
             ),
           ],
         ),
