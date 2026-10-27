@@ -54,12 +54,13 @@ class _SettingsBody extends StatelessWidget {
                   onChanged: settings.setUiFontSize,
                 ),
               ),
-              SizedBox(
-                width: 44,
-                child: Text(
-                  '${settings.uiFontPct.round()}%',
-                  textAlign: TextAlign.center,
-                ),
+              _SliderValueBox(
+                label: '${settings.uiFontPct.round()}%',
+                value: settings.uiFontPct,
+                min: 70,
+                max: 130,
+                width: 58,
+                onChanged: settings.setUiFontSize,
               ),
             ],
           ),
@@ -90,12 +91,13 @@ class _SettingsBody extends StatelessWidget {
                   onChanged: settings.setFontSize,
                 ),
               ),
-              SizedBox(
-                width: 32,
-                child: Text(
-                  '${settings.fontSize.round()}',
-                  textAlign: TextAlign.center,
-                ),
+              _SliderValueBox(
+                label: '${settings.fontSize.round()}',
+                value: settings.fontSize,
+                min: 10,
+                max: 32,
+                width: 46,
+                onChanged: settings.setFontSize,
               ),
             ],
           ),
@@ -296,9 +298,7 @@ class _SettingsBody extends StatelessWidget {
                       }
                       if (type == SourceType.bible && context.mounted) {
                         await context.read<BibleProvider>().syncWithSources(
-                              context
-                                  .read<SettingsProvider>()
-                                  .enabledBibles,
+                              context.read<SettingsProvider>().enabledBibles,
                             );
                       }
                     },
@@ -547,4 +547,105 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// Value box shown at the right end of a font-size slider. Tapping it opens
+/// a small editor where the number can be typed directly or stepped with
+/// +/- buttons; the value is clamped to the slider's min/max either way.
+class _SliderValueBox extends StatelessWidget {
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final double width;
+  final ValueChanged<double> onChanged;
+
+  const _SliderValueBox({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    this.width = 56,
+  });
+
+  Future<void> _edit(BuildContext context) async {
+    final strings = AppStrings(context.read<SettingsProvider>().appLanguage);
+    final controller = TextEditingController(text: value.round().toString());
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) {
+          void bump(int delta) {
+            final cur = int.tryParse(controller.text) ?? value.round();
+            final v = (cur + delta).clamp(min.round(), max.round());
+            controller.text = v.toString();
+          }
+
+          return AlertDialog(
+            title: Text(label),
+            content: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: () => bump(-1),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      hintText: '${min.round()}–${max.round()}',
+                    ),
+                    onChanged: (_) => setDlg(() {}),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: () => bump(1),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(strings.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(strings.apply),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (confirmed == true) {
+      final v = (int.tryParse(controller.text) ?? value.round())
+          .clamp(min.round(), max.round());
+      onChanged(v.toDouble());
+    }
+    controller.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: () => _edit(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Text(
+            label,
+            maxLines: 1,
+            softWrap: false,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
 }

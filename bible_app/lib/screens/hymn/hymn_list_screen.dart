@@ -206,28 +206,37 @@ class _HymnListScreenState extends State<HymnListScreen> {
               : LayoutBuilder(
                   builder: (context, constraints) {
                     final uiScale = settings.uiScale;
+                    // Rendered Text also applies the SYSTEM font scale
+                    // (MediaQuery), so measuring without it under-counts
+                    // wrapped lines on devices with enlarged system fonts.
+                    final scaler = MediaQuery.textScalerOf(context);
                     const spacing = 4.0;
                     final tileWidth =
                         (constraints.maxWidth - 16 - spacing * 2) / 3;
-                    final titleFs = 12 * uiScale;
+                    // Effective (rendered) sizes; the painter applies [scaler]
+                    // to the unscaled span sizes below.
+                    final titleFs = scaler.scale(12 * uiScale);
+                    final numberFs = scaler.scale(14 * uiScale);
                     // Measure real line counts; GridView needs one uniform
                     // height, so use the tallest wrapped title.
                     final tp = TextPainter(
                       textDirection: TextDirection.ltr,
                       maxLines: 2,
+                      textScaler: scaler,
                     );
                     var maxTitleLines = 1;
                     for (final h in _filtered) {
                       tp.text = TextSpan(
                         text: h.plainTitle,
-                        style: TextStyle(fontSize: titleFs, height: 1.3),
+                        // Unscaled size — the painter applies [scaler].
+                        style: TextStyle(fontSize: 12 * uiScale, height: 1.3),
                       );
                       tp.layout(maxWidth: tileWidth - 12);
                       final n = tp.computeLineMetrics().length;
                       if (n > maxTitleLines) maxTitleLines = n;
                       if (maxTitleLines >= 2) break;
                     }
-                    final tileHeight = 14 * uiScale * 1.1 +
+                    final tileHeight = numberFs * 1.1 +
                         2 +
                         titleFs * 1.3 * maxTitleLines +
                         4 +
