@@ -200,15 +200,38 @@ class _HymnListScreenState extends State<HymnListScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _filtered.isEmpty
               ? Center(child: Text(strings.noResults))
-              // Tile height follows the text size (menu font %), so wide
-              // tablet layouts don't get oversized tiles with empty space.
+              // Tile height follows the actual text size: measure how many
+              // lines each title wraps to (max 2) and fit the tallest tile,
+              // so wrapped titles are never clipped — on phones or tablets.
               : LayoutBuilder(
                   builder: (context, constraints) {
                     final uiScale = settings.uiScale;
                     const spacing = 4.0;
                     final tileWidth =
                         (constraints.maxWidth - 16 - spacing * 2) / 3;
-                    final tileHeight = 52 * uiScale + 10;
+                    final titleFs = 12 * uiScale;
+                    // Measure real line counts; GridView needs one uniform
+                    // height, so use the tallest wrapped title.
+                    final tp = TextPainter(
+                      textDirection: TextDirection.ltr,
+                      maxLines: 2,
+                    );
+                    var maxTitleLines = 1;
+                    for (final h in _filtered) {
+                      tp.text = TextSpan(
+                        text: h.plainTitle,
+                        style: TextStyle(fontSize: titleFs, height: 1.3),
+                      );
+                      tp.layout(maxWidth: tileWidth - 12);
+                      final n = tp.computeLineMetrics().length;
+                      if (n > maxTitleLines) maxTitleLines = n;
+                      if (maxTitleLines >= 2) break;
+                    }
+                    final tileHeight = 14 * uiScale * 1.1 +
+                        2 +
+                        titleFs * 1.3 * maxTitleLines +
+                        4 +
+                        8;
                     return GridView.builder(
                       padding: const EdgeInsets.all(8),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

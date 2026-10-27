@@ -311,10 +311,8 @@ class _LyricsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 교독문은 성경 본문과 같은 글자 크기 설정값을 사용한다.
-    final contentFont = reading
-        ? context.watch<SettingsProvider>().fontSize
-        : 15.0;
+    // 본문(가사/교독문)은 성경과 같은 본문 글자 크기 설정값을 사용한다.
+    final contentFont = context.watch<SettingsProvider>().fontSize;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -323,8 +321,7 @@ class _LyricsPage extends StatelessWidget {
           Text(
             '${hymn.chapter}. ${hymn.plainTitle}',
             style: TextStyle(
-                fontSize: reading ? contentFont + 2 : 18,
-                fontWeight: FontWeight.bold),
+                fontSize: contentFont + 2, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           HtmlContent(html: hymn.text, fontSize: contentFont),
