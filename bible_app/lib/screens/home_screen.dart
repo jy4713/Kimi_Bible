@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
   DateTime? _lastBackPress;
+  final _navigatorKey = GlobalKey<NavigatorState>();
   final _commentaryKey = GlobalKey<CommentaryScreenState>();
   final _compareKey = GlobalKey<CompareScreenState>();
 
@@ -69,6 +70,12 @@ class _HomeScreenState extends State<HomeScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
+        // Close any menu opened inside a tab (settings, search, ...) first.
+        final nav = _navigatorKey.currentState;
+        if (nav != null && nav.canPop()) {
+          nav.pop();
+          return;
+        }
         if (_index != 0) {
           setState(() => _index = 0);
           return;
@@ -88,39 +95,50 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       child: Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: _screens,
-      ),
-      bottomNavigationBar: NavigationBar(
-        height: 62,
-        labelTextStyle: WidgetStateProperty.all(
-          TextStyle(fontSize: 12 * settings.uiScale),
-        ),
-        selectedIndex: _index,
-        onDestinationSelected: (i) {
-          setState(() => _index = i);
-          if (i == 1) {
-            // Compare tab: follow the Bible reader's current location.
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _compareKey.currentState?.syncFromBible();
-            });
-          } else if (i == 4) {
-            // Commentary tab: jump to the exact verse being read.
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _commentaryKey.currentState?.openCurrentBibleLocation();
-            });
-          }
-        },
-        destinations: [
-          for (int i = 0; i < labels.length; i++)
-            NavigationDestination(
-              icon: Icon(_icons[i], size: 22),
-              selectedIcon: Icon(_selectedIcons[i], size: 22),
-              label: labels[i],
+        // Tabs live in a nested Navigator so pushed menus (settings, search)
+        // slide over the tab content while the bottom navigation bar stays
+        // visible; tapping a tab pops the menu and switches at the same time.
+        body: Navigator(
+          key: _navigatorKey,
+          onGenerateRoute: (_) => MaterialPageRoute(
+            builder: (_) => IndexedStack(
+              index: _index,
+              children: _screens,
             ),
-        ],
-      ),
+            settings: const RouteSettings(name: '/'),
+          ),
+        ),
+        bottomNavigationBar: NavigationBar(
+          height: 62,
+          labelTextStyle: WidgetStateProperty.all(
+            TextStyle(fontSize: 12 * settings.uiScale),
+          ),
+          selectedIndex: _index,
+          onDestinationSelected: (i) {
+            // Close any open menu, then switch to the tapped tab.
+            _navigatorKey.currentState?.popUntil((r) => r.isFirst);
+            setState(() => _index = i);
+            if (i == 1) {
+              // Compare tab: follow the Bible reader's current location.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _compareKey.currentState?.syncFromBible();
+              });
+            } else if (i == 4) {
+              // Commentary tab: jump to the exact verse being read.
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _commentaryKey.currentState?.openCurrentBibleLocation();
+              });
+            }
+          },
+          destinations: [
+            for (int i = 0; i < labels.length; i++)
+              NavigationDestination(
+                icon: Icon(_icons[i], size: 22),
+                selectedIcon: Icon(_selectedIcons[i], size: 22),
+                label: labels[i],
+              ),
+          ],
+        ),
       ),
     );
   }

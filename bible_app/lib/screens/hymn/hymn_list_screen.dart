@@ -200,21 +200,33 @@ class _HymnListScreenState extends State<HymnListScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _filtered.isEmpty
               ? Center(child: Text(strings.noResults))
-              : GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    // Slim tiles (~2/3 height); titles ellipsis after 2 lines.
-                    // Ratio keeps two scaled title lines (up to 130%) inside.
-                    childAspectRatio: 1.65,
-                    crossAxisSpacing: 4,
-                    mainAxisSpacing: 4,
-                  ),
-                  itemCount: _filtered.length,
-                  itemBuilder: (_, i) => _HymnCard(
-                    hymn: _filtered[i],
-                    onTap: () => _openHymn(_filtered[i].chapter),
-                  ),
+              // Tile height follows the text size (menu font %), so wide
+              // tablet layouts don't get oversized tiles with empty space.
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    final uiScale = settings.uiScale;
+                    const spacing = 4.0;
+                    final tileWidth =
+                        (constraints.maxWidth - 16 - spacing * 2) / 3;
+                    final tileHeight = 52 * uiScale + 10;
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(8),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        // Titles ellipsis after 2 lines; ratio keeps two
+                        // scaled title lines (up to 130%) inside.
+                        childAspectRatio:
+                            (tileWidth / tileHeight).clamp(1.2, 5.0),
+                        crossAxisSpacing: spacing,
+                        mainAxisSpacing: spacing,
+                      ),
+                      itemCount: _filtered.length,
+                      itemBuilder: (_, i) => _HymnCard(
+                        hymn: _filtered[i],
+                        onTap: () => _openHymn(_filtered[i].chapter),
+                      ),
+                    );
+                  },
                 ),
     );
   }

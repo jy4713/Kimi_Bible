@@ -127,7 +127,7 @@ class _HymnDetailScreenState extends State<HymnDetailScreen>
               chapter: widget.allHymns[i].chapter,
               onZoom: _onViewerScale,
             )
-          : _LyricsPage(hymn: widget.allHymns[i]),
+          : _LyricsPage(hymn: widget.allHymns[i], reading: widget.source.isReading),
     );
 
     return Scaffold(
@@ -304,10 +304,17 @@ class _SheetMusicPageState extends State<_SheetMusicPage> {
 
 class _LyricsPage extends StatelessWidget {
   final HymnEntry hymn;
-  const _LyricsPage({required this.hymn});
+  /// 교독문이면 본문 글자 크기(설정값)를 따르고, 찬송가 가사는 기존 고정 크기 유지.
+  final bool reading;
+
+  const _LyricsPage({required this.hymn, this.reading = false});
 
   @override
   Widget build(BuildContext context) {
+    // 교독문은 성경 본문과 같은 글자 크기 설정값을 사용한다.
+    final contentFont = reading
+        ? context.watch<SettingsProvider>().fontSize
+        : 15.0;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -315,10 +322,12 @@ class _LyricsPage extends StatelessWidget {
         children: [
           Text(
             '${hymn.chapter}. ${hymn.plainTitle}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: reading ? contentFont + 2 : 18,
+                fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          HtmlContent(html: hymn.text, fontSize: 15),
+          HtmlContent(html: hymn.text, fontSize: contentFont),
         ],
       ),
     );
