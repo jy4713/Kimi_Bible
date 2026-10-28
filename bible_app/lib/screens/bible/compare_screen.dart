@@ -60,8 +60,8 @@ class CompareScreenState extends State<CompareScreen> {
       if (!mounted || _pendingVerse != v) return;
       final estH = (cmp.axis == Axis.horizontal ? 110.0 : 150.0);
       if (_scroll.hasClients) {
-        final target = ((v - 1) * estH)
-            .clamp(0.0, _scroll.position.maxScrollExtent);
+        final target =
+            ((v - 1) * estH).clamp(0.0, _scroll.position.maxScrollExtent);
         _scroll.jumpTo(target);
       }
       await Future<void>.delayed(const Duration(milliseconds: 80));
@@ -104,8 +104,7 @@ class CompareScreenState extends State<CompareScreen> {
     final signature = settings.enabledBibles.map((s) => s.id).join('|');
     if (signature != _sourceSignature) {
       _sourceSignature = signature;
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _syncSources());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _syncSources());
     }
   }
 
@@ -259,80 +258,113 @@ class CompareScreenState extends State<CompareScreen> {
 
     final selectedSources = <SourceInfo>[
       for (final id in cmp.selectedIds)
-        if (sources.any((s) => s.id == id)) sources.firstWhere((s) => s.id == id),
+        if (sources.any((s) => s.id == id))
+          sources.firstWhere((s) => s.id == id),
     ];
+
+    // Title pieces: the book name is ALWAYS shown Korean / English, like
+    // the reader header; chapter / verse go on a second line when the
+    // single line would not fit (same behaviour as the Bible screen).
+    final bookKE = '${bookInfo.korean} / ${bookInfo.english}';
+    final chLabel = strings.chapterLabel(cmp.chapter);
+    final vLabel = strings.verseLabel(_pendingVerse ?? 1);
+    final titleStyle = Theme.of(context)
+        .textTheme
+        .titleMedium
+        ?.copyWith(fontWeight: FontWeight.bold);
+    double measure(String s) {
+      final tp = TextPainter(
+        text: TextSpan(text: s, style: titleStyle),
+        maxLines: 1,
+        textDirection: TextDirection.ltr,
+      )..layout();
+      return tp.width;
+    }
+
+    const buttonPad = 12.0; // horizontal padding per TextButton (6×2)
+    const extraW = buttonPad * 3 + 96; // paddings + chevrons
+    final contentsW = measure(bookKE) + measure(chLabel) + measure(vLabel);
+    // Three action icons (layout, translations, settings) on the right.
+    final availW = MediaQuery.of(context).size.width - 156;
+    final oneLine = contentsW + extraW <= availW;
+    final scaler = MediaQuery.textScalerOf(context);
+    final lineH = scaler.scale(titleStyle?.fontSize ?? 16) * 1.35;
+    final toolbarHeight = oneLine ? null : (lineH * 2 + 34).clamp(64.0, 170.0);
+
+    final bookBtn = TextButton(
+      onPressed: sources.isEmpty ? null : () => _selectBook(cmp, sources),
+      style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      child: Text(
+        bookKE,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: titleStyle,
+      ),
+    );
+    final chBtn = TextButton(
+      onPressed: sources.isEmpty ? null : () => _selectChapter(cmp, sources),
+      style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      child: Text(chLabel, style: titleStyle),
+    );
+    final vBtn = TextButton(
+      onPressed: sources.isEmpty ? null : () => _selectVerseOnly(cmp, sources),
+      style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      child: Text(vLabel, style: titleStyle),
+    );
+    final prevBtn = IconButton(
+      icon: const Icon(Icons.chevron_left),
+      tooltip: strings.previousChapter,
+      onPressed: () => _prevChapter(cmp, sources),
+    );
+    final nextBtn = IconButton(
+      icon: const Icon(Icons.chevron_right),
+      tooltip: strings.nextChapter,
+      onPressed: () => _nextChapter(cmp, sources),
+    );
 
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 4,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Book: book -> chapter -> verse selection flow.
-            Flexible(
-              child: TextButton(
-                onPressed:
-                    sources.isEmpty ? null : () => _selectBook(cmp, sources),
-                style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                child: Text(
-                  strings.bookLabel(
-                      korean: bookInfo.korean, english: bookInfo.english),
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+        toolbarHeight: toolbarHeight,
+        title: oneLine
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: bookBtn),
+                  chBtn,
+                  vBtn,
+                  prevBtn,
+                  nextBtn,
+                ],
+              )
+            : Padding(
+                // Nudge the two-line title down so the first line is not
+                // clipped by the status bar / app bar edge.
+                padding: const EdgeInsets.only(top: 8, bottom: 2),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Flexible(child: bookBtn)],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [chBtn, vBtn, prevBtn, nextBtn],
+                    ),
+                  ],
                 ),
               ),
-            ),
-            // Chapter: chapter -> verse selection flow.
-            TextButton(
-              onPressed:
-                  sources.isEmpty ? null : () => _selectChapter(cmp, sources),
-              style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-              child: Text(
-                strings.chapterLabel(cmp.chapter),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            // Verse: verse-only selection (scrolls within the chapter).
-            TextButton(
-              onPressed: sources.isEmpty
-                  ? null
-                  : () => _selectVerseOnly(cmp, sources),
-              style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-              child: Text(
-                strings.verseLabel(_pendingVerse ?? 1),
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_left),
-              tooltip: strings.previousChapter,
-              onPressed: () => _prevChapter(cmp, sources),
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right),
-              tooltip: strings.nextChapter,
-              onPressed: () => _nextChapter(cmp, sources),
-            ),
-          ],
-        ),
         actions: [
           // Layout toggle: side-by-side <-> stacked-per-verse
           IconButton(
@@ -340,9 +372,8 @@ class CompareScreenState extends State<CompareScreen> {
                 ? Icons.view_column_outlined
                 : Icons.view_agenda_outlined),
             tooltip: strings.layoutTooltip,
-            onPressed: () => cmp.setAxis(cmp.axis == Axis.horizontal
-                ? Axis.vertical
-                : Axis.horizontal),
+            onPressed: () => cmp.setAxis(
+                cmp.axis == Axis.horizontal ? Axis.vertical : Axis.horizontal),
           ),
           // Translation multi-select
           IconButton(
@@ -486,8 +517,7 @@ class _CompareVerseList extends StatelessWidget {
     );
   }
 
-  Widget _translationText(
-      BuildContext context, int index, String? text,
+  Widget _translationText(BuildContext context, int index, String? text,
       {bool left = false, bool top = false}) {
     final color = _tints[index % _tints.length];
     final label = sources[index].name;

@@ -37,6 +37,8 @@ class AppStrings {
   String get bibleSearch => isKorean ? '성경 검색' : 'Bible search';
   String get searchHint =>
       isKorean ? '단어 또는 구절 검색...' : 'Search a word or phrase...';
+  String get bookSearchHint =>
+      isKorean ? '성경권 검색 (이름/번호)...' : 'Search books (name/number)...';
   String get translation => isKorean ? '번역' : 'Translation';
   String get enterSearchQuery =>
       isKorean ? '검색어를 입력하세요' : 'Enter a search term';
@@ -52,9 +54,8 @@ class AppStrings {
       isKorean ? '좌우 / 상하 전환' : 'Toggle side-by-side / top-bottom';
   String get sideBySide => isKorean ? '좌우' : 'Side by side';
   String get topBottom => isKorean ? '상하' : 'Top / bottom';
-  String get singleSelectionHint => isKorean
-      ? '읽을 성경 역본을 하나 선택하세요.'
-      : 'Choose the translation to read.';
+  String get singleSelectionHint =>
+      isKorean ? '읽을 성경 역본을 하나 선택하세요.' : 'Choose the translation to read.';
   String get compareSelectionHint => isKorean
       ? '대조할 역본을 여러 개 선택하세요. 최대 4개까지 선택할 수 있습니다.'
       : 'Pick several translations to compare. Up to four.';
@@ -98,9 +99,8 @@ class AppStrings {
       isKorean ? '악보 이미지를 불러올 수 없습니다' : 'Unable to load sheet music';
   String get addHymnFile =>
       isKorean ? '찬송가 파일 추가 (.hdb)' : 'Add hymnal file (.hdb)';
-  String get addReadingFile => isKorean
-      ? '교독문 파일 추가 (.hdb)'
-      : 'Add responsive reading file (.hdb)';
+  String get addReadingFile =>
+      isKorean ? '교독문 파일 추가 (.hdb)' : 'Add responsive reading file (.hdb)';
   String get cmpCopied => isKorean
       ? '동일한 이름의 .cmp 악보 파일도 추가되었습니다.'
       : 'The matching .cmp sheet-music file was also added.';
@@ -127,9 +127,8 @@ class AppStrings {
   String get fontPreview => isKorean
       ? '태초에 하나님이 천지를 창조하시니라. (창 1:1)'
       : 'In the beginning God created the heaven and the earth. (Genesis 1:1)';
-  String get pressBackAgainToExit => isKorean
-      ? '뒤로가기를 한 번 더 누르면 앱이 종료됩니다'
-      : 'Press back again to exit';
+  String get pressBackAgainToExit =>
+      isKorean ? '뒤로가기를 한 번 더 누르면 앱이 종료됩니다' : 'Press back again to exit';
   String get theme => isKorean ? '테마' : 'Theme';
   String get systemTheme => isKorean ? '시스템 설정' : 'System';
   String get lightTheme => isKorean ? '밝은 테마' : 'Light';
@@ -141,15 +140,16 @@ class AppStrings {
       ? '켜두면 앱을 사용하는 동안 화면이 꺼지지 않습니다. 꺼두면 기기 설정 시간에 따라 꺼집니다.'
       : 'When on, the screen stays awake while the app is open. When off, the device screen-timeout applies.';
   String get language => isKorean ? '언어' : 'Language';
-  String get koreanLanguage => isKorean ? '한국어' : 'Korean';
-  String get englishLanguage => isKorean ? '영어' : 'English';
+  // Language names are always shown in their own language so speakers can
+  // recognize and pick theirs regardless of the current UI language.
+  String get koreanLanguage => '한국어';
+  String get englishLanguage => 'English';
   String get bibleTranslations => isKorean ? '성경 번역' : 'Bible translations';
   String get addBibleFile =>
       isKorean ? '성경 파일 추가 (.bdb / .sdb)' : 'Add Bible file (.bdb / .sdb)';
   String get commentarySources => isKorean ? '주석' : 'Commentaries';
   String get hymnSources => isKorean ? '찬송가' : 'Hymnals';
-  String get readingSources =>
-      isKorean ? '교독문' : 'Responsive readings';
+  String get readingSources => isKorean ? '교독문' : 'Responsive readings';
   String get builtIn => isKorean ? '기본 제공' : 'Built in';
   String deleteSourceConfirm(String name) => isKorean
       ? '$name을(를) 삭제하시겠습니까?\n앱에 복사된 데이터는 삭제되고, 원본 파일은 그대로 남습니다.'
@@ -171,8 +171,7 @@ class AppStrings {
   // Notes
   String get notes => isKorean ? '노트' : 'Notes';
   String get addNote => isKorean ? '노트 추가' : 'Add note';
-  String get noteHint =>
-      isKorean ? '노트를 입력하세요...' : 'Write your note...';
+  String get noteHint => isKorean ? '노트를 입력하세요...' : 'Write your note...';
   String get noteEdit => isKorean ? '노트 수정' : 'Edit note';
   String noteForVerses(int from, int to) => from == to
       ? (isKorean ? '$from절 노트' : 'Verse $from note')
@@ -181,22 +180,18 @@ class AppStrings {
       isKorean ? '선택한 $count절 노트' : 'Note for $count selected verses';
   String selectedVersesCount(int count) =>
       isKorean ? '$count절 선택됨' : '$count verses selected';
-  String get exportNotes =>
-      isKorean ? '노트 내보내기 (CSV)' : 'Export notes (CSV)';
+  String get exportNotes => isKorean ? '노트 내보내기 (CSV)' : 'Export notes (CSV)';
   String get chooseExportFolder =>
       isKorean ? '내보내기할 폴더 선택' : 'Choose export folder';
   String get exportNotesFailed =>
       isKorean ? '노트 내보내기에 실패했습니다.' : 'Failed to export notes.';
   String get exportNotesCancelled =>
       isKorean ? '노트 내보내기가 취소됐습니다.' : 'Export cancelled.';
-  String get importNotes =>
-      isKorean ? '노트 가져오기 (CSV)' : 'Import notes (CSV)';
-  String notesExported(String path) => isKorean
-      ? '노트를 내보냈습니다:\n$path'
-      : 'Notes exported to:\n$path';
-  String notesImported(int count) => isKorean
-      ? '$count개의 노트를 가져왔습니다.'
-      : 'Imported $count notes.';
+  String get importNotes => isKorean ? '노트 가져오기 (CSV)' : 'Import notes (CSV)';
+  String notesExported(String path) =>
+      isKorean ? '노트를 내보냈습니다:\n$path' : 'Notes exported to:\n$path';
+  String notesImported(int count) =>
+      isKorean ? '$count개의 노트를 가져왔습니다.' : 'Imported $count notes.';
   String get notesImportFailed =>
       isKorean ? '노트 가져오기에 실패했습니다.' : 'Failed to import notes.';
   String get noNotes => isKorean ? '저장된 노트가 없습니다.' : 'No notes saved yet.';

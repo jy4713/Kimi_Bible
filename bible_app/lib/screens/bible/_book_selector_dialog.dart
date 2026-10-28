@@ -31,6 +31,8 @@ class _BookSelectorDialogState extends State<BookSelectorDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tab;
   int? _selectedBook;
+  final _search = TextEditingController();
+  String _query = '';
 
   @override
   void initState() {
@@ -42,12 +44,26 @@ class _BookSelectorDialogState extends State<BookSelectorDialog>
 
   @override
   void dispose() {
+    _search.dispose();
     _tab.dispose();
     super.dispose();
   }
 
   List<BookInfo> get otBooks => bibleBooks.where((b) => b.isOT).toList();
   List<BookInfo> get ntBooks => bibleBooks.where((b) => !b.isOT).toList();
+
+  /// Books matching the search box: Korean/English name or book number.
+  /// While a query is active the OT/NT tabs are replaced by this list.
+  List<BookInfo> get filteredBooks {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    return bibleBooks
+        .where((b) =>
+            b.korean.contains(q) ||
+            b.english.toLowerCase().contains(q) ||
+            b.number.toString() == q)
+        .toList();
+  }
 
   Widget _bookList(List<BookInfo> books) {
     return ListView.builder(
@@ -60,7 +76,7 @@ class _BookSelectorDialogState extends State<BookSelectorDialog>
           leading: Text('${b.number}'),
           title: Text(b.korean),
           trailing: Text(b.english,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              style: const TextStyle(fontSize: 14, color: Colors.grey)),
           onTap: () => _showChapters(b),
         );
       },
@@ -77,12 +93,11 @@ class _BookSelectorDialogState extends State<BookSelectorDialog>
 
     // Optional verse-picking step.
     if (widget.verseCountProvider != null) {
-      final verseCount =
-          await widget.verseCountProvider!(book.number, chapter);
+      final verseCount = await widget.verseCountProvider!(book.number, chapter);
       if (!mounted) return;
       if (verseCount != null && verseCount > 0) {
-        final isCurrentLoc =
-            book.number == widget.currentBook && chapter == widget.currentChapter;
+        final isCurrentLoc = book.number == widget.currentBook &&
+            chapter == widget.currentChapter;
         final verse = await showDialog<int>(
           context: context,
           builder: (_) => VerseSelectorDialog(
@@ -106,25 +121,59 @@ class _BookSelectorDialogState extends State<BookSelectorDialog>
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings(context.watch<SettingsProvider>().appLanguage);
+    final results = filteredBooks;
     return Dialog(
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TabBar(
-            controller: _tab,
-            tabs: [
-              Tab(text: strings.oldTestament),
-              Tab(text: strings.newTestament),
-            ],
-          ),
-          SizedBox(
-            height: 400,
-            child: TabBarView(
-              controller: _tab,
-              children: [_bookList(otBooks), _bookList(ntBooks)],
+          // Search box: filters books by name/number across both testaments.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: TextField(
+              controller: _search,
+              decoration: InputDecoration(
+                hintText: strings.bookSearchHint,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _search.clear();
+                          setState(() => _query = '');
+                        },
+                      ),
+                isDense: true,
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                filled: true,
+              ),
+              onChanged: (v) => setState(() => _query = v),
             ),
           ),
+          if (_query.trim().isEmpty) ...[
+            TabBar(
+              controller: _tab,
+              tabs: [
+                Tab(text: strings.oldTestament),
+                Tab(text: strings.newTestament),
+              ],
+            ),
+            SizedBox(
+              height: 400,
+              child: TabBarView(
+                controller: _tab,
+                children: [_bookList(otBooks), _bookList(ntBooks)],
+              ),
+            ),
+          ] else
+            SizedBox(
+              height: 400,
+              child: results.isEmpty
+                  ? Center(child: Text(strings.noResults))
+                  : _bookList(results),
+            ),
         ],
       ),
     );
@@ -144,8 +193,7 @@ Future<Map<String, int>?> showChapterVersePicker(
 }) async {
   final chapter = await showDialog<int>(
     context: context,
-    builder: (_) =>
-        _ChapterDialog(book: book, currentChapter: currentChapter),
+    builder: (_) => _ChapterDialog(book: book, currentChapter: currentChapter),
   );
   if (chapter == null || !context.mounted) return null;
 
@@ -169,7 +217,8 @@ Future<Map<String, int>?> showChapterVersePicker(
 }
 
 /// Grid dialog for picking a verse within the current chapter.
-class VerseSelectorDialog extends StatelessWidget {  final int verseCount;
+class VerseSelectorDialog extends StatelessWidget {
+  final int verseCount;
   final int currentVerse;
 
   const VerseSelectorDialog({

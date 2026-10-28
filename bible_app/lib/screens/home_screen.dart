@@ -110,8 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         bottomNavigationBar: NavigationBar(
           height: 62,
+          // Fixed label size on purpose: it must not follow the menu-font %
+          // setting, or long English labels ("Commentary", ...) wrap and
+          // break the button layout when the menu font is enlarged.
           labelTextStyle: WidgetStateProperty.all(
-            TextStyle(fontSize: 12 * settings.uiScale),
+            const TextStyle(fontSize: 12, height: 1.0),
           ),
           selectedIndex: _index,
           onDestinationSelected: (i) {
