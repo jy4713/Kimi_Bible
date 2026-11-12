@@ -496,21 +496,21 @@ class _SettingsBody extends StatelessWidget {
     final controller = TextEditingController(text: src.name);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(strings.renameSourceTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
           decoration: InputDecoration(hintText: strings.renameSourceHint),
-          onSubmitted: (_) => Navigator.of(context).pop(true),
+          onSubmitted: (_) => Navigator.of(dialogContext).pop(true),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(strings.cancel),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text(strings.ok),
           ),
         ],
