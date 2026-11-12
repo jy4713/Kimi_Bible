@@ -4,7 +4,7 @@ enum SourceType { bible, commentary, hymn, dictionary }
 
 class SourceInfo {
   final String id; // e.g. '개역개정'
-  final String name; // display name
+  String name; // display name (user-renamable in Settings)
   final SourceType type;
   final String assetPath; // asset path if bundled, empty if user-imported
   final String companionAssetPath; // optional bundled companion (e.g. .cmp)
@@ -75,16 +75,16 @@ class SourceInfo {
 // reader stays uncluttered, and the user can turn them on in Settings.
 final List<SourceInfo> kBuiltInBibles = [
   SourceInfo(
-      id: '개역개정',
-      name: '개역개정',
+      id: '개역한글_Strong',
+      name: '개역한글 Strong',
       type: SourceType.bible,
-      assetPath: 'assets/bible/개역개정.bdb',
+      assetPath: 'assets/bible/개역한글_Strong.sdb',
       isBuiltIn: true),
   SourceInfo(
-      id: '개역한글',
-      name: '개역한글',
+      id: '개역개정_Strong',
+      name: '개역개정 Strong',
       type: SourceType.bible,
-      assetPath: 'assets/bible/개역한글.bdb',
+      assetPath: 'assets/bible/개역개정_Strong.sdb',
       isBuiltIn: true),
   SourceInfo(
       id: '새번역',
@@ -98,6 +98,20 @@ final List<SourceInfo> kBuiltInBibles = [
       type: SourceType.bible,
       assetPath: 'assets/bible/NIV.bdb',
       isBuiltIn: true),
+  SourceInfo(
+      id: '개역개정',
+      name: '개역개정',
+      type: SourceType.bible,
+      assetPath: 'assets/bible/개역개정.bdb',
+      isBuiltIn: true,
+      isEnabled: false),
+  SourceInfo(
+      id: '개역한글',
+      name: '개역한글',
+      type: SourceType.bible,
+      assetPath: 'assets/bible/개역한글.bdb',
+      isBuiltIn: true,
+      isEnabled: false),
   SourceInfo(
       id: '바른성경',
       name: '바른성경',
@@ -171,17 +185,24 @@ final List<SourceInfo> kBuiltInBibles = [
   // Strong's-numbered texts: words carry <WHxxxx>/<WGxxxx> markers that are
   // hidden in display but power tap-for-definition lookup.
   SourceInfo(
-      id: '개역한글S',
-      name: '개역한글S',
+      id: 'KJV_Strong',
+      name: 'KJV (Strong)',
       type: SourceType.bible,
-      assetPath: 'assets/bible/개역한글S.sdb',
+      assetPath: 'assets/bible/KJV_Strong.sdb',
       isBuiltIn: true,
       isEnabled: false),
   SourceInfo(
-      id: 'KJV_S',
-      name: 'KJV (Strong)',
+      id: 'ESV',
+      name: 'ESV',
       type: SourceType.bible,
-      assetPath: 'assets/bible/KJV_S.sdb',
+      assetPath: 'assets/bible/ESV.bdb',
+      isBuiltIn: true,
+      isEnabled: false),
+  SourceInfo(
+      id: 'NAS2020',
+      name: 'NASB 2020',
+      type: SourceType.bible,
+      assetPath: 'assets/bible/NAS2020.bdb',
       isBuiltIn: true,
       isEnabled: false),
 ];

@@ -258,6 +258,25 @@ class SettingsProvider with ChangeNotifier {
     await _persist();
   }
 
+  /// Rename a source's display name (e.g. to tell NIV editions apart).
+  /// The id is untouched so verses, notes and the reader selection still work.
+  Future<void> renameSource(SourceInfo source, String newName) async {
+    final trimmed = newName.trim();
+    if (trimmed.isEmpty || trimmed == source.name) return;
+    final list = switch (source.type) {
+      SourceType.bible => _bibles,
+      SourceType.commentary => _commentaries,
+      SourceType.hymn => _hymns,
+      SourceType.dictionary => null,
+    };
+    if (list == null) return;
+    for (final s in list) {
+      if (s.id == source.id) s.name = trimmed;
+    }
+    notifyListeners();
+    await _persist();
+  }
+
   Future<bool> removeSource(SourceInfo source) async {
     switch (source.type) {
       case SourceType.bible:

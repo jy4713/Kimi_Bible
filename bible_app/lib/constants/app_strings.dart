@@ -25,6 +25,7 @@ class AppStrings {
   String get edit => isKorean ? '수정' : 'Edit';
   String get close => isKorean ? '닫기' : 'Close';
   String get apply => isKorean ? '적용' : 'Apply';
+  String get ok => isKorean ? '확인' : 'OK';
   String get previous => isKorean ? '이전' : 'Previous';
   String get next => isKorean ? '다음' : 'Next';
   String get noData => isKorean ? '데이터가 없습니다' : 'No data available';
@@ -151,6 +152,11 @@ class AppStrings {
   String get hymnSources => isKorean ? '찬송가' : 'Hymnals';
   String get readingSources => isKorean ? '교독문' : 'Responsive readings';
   String get builtIn => isKorean ? '기본 제공' : 'Built in';
+  String get renameSource => isKorean ? '이름 변경' : 'Rename';
+  String get renameSourceTitle =>
+      isKorean ? '성경 이름 변경' : 'Rename translation';
+  String get renameSourceHint =>
+      isKorean ? '표시할 이름을 입력하세요.' : 'Enter the display name.';
   String deleteSourceConfirm(String name) => isKorean
       ? '$name을(를) 삭제하시겠습니까?\n앱에 복사된 데이터는 삭제되고, 원본 파일은 그대로 남습니다.'
       : 'Delete $name?\nThe app\'s copied data will be removed; the original file stays.';

@@ -283,6 +283,11 @@ class _SettingsBody extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: strings.renameSource,
+              onPressed: () => _renameSource(context, settings, src),
+            ),
             Switch(
               value: src.isEnabled,
               onChanged: isLastEnabled
@@ -483,6 +488,38 @@ class _SettingsBody extends StatelessWidget {
         SnackBar(content: Text(strings.notesImportFailed)),
       );
     }
+  }
+
+  Future<void> _renameSource(
+      BuildContext context, SettingsProvider settings, SourceInfo src) async {
+    final strings = AppStrings(settings.appLanguage);
+    final controller = TextEditingController(text: src.name);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(strings.renameSourceTitle),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(hintText: strings.renameSourceHint),
+          onSubmitted: (_) => Navigator.of(context).pop(true),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(strings.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(strings.ok),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) {
+      await settings.renameSource(src, controller.text);
+    }
+    controller.dispose();
   }
 
   Future<void> _confirmRemove(
