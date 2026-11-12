@@ -109,12 +109,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         bottomNavigationBar: NavigationBar(
-          height: 62,
+          height: 54,
           // Fixed label size on purpose: it must not follow the menu-font %
           // setting, or long English labels ("Commentary", ...) wrap and
           // break the button layout when the menu font is enlarged.
           labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(fontSize: 12, height: 1.0),
+            const TextStyle(fontSize: 11, height: 1.0),
           ),
           selectedIndex: _index,
           onDestinationSelected: (i) {
@@ -136,8 +136,8 @@ class _HomeScreenState extends State<HomeScreen> {
           destinations: [
             for (int i = 0; i < labels.length; i++)
               NavigationDestination(
-                icon: Icon(_icons[i], size: 22),
-                selectedIcon: Icon(_selectedIcons[i], size: 22),
+                icon: Icon(_icons[i], size: 20),
+                selectedIcon: Icon(_selectedIcons[i], size: 20),
                 label: labels[i],
               ),
           ],
