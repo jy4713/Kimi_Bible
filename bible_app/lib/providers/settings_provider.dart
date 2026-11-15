@@ -12,6 +12,8 @@ class SettingsProvider with ChangeNotifier {
   static const _kThemeMode = 'themeMode';
   static const _kLanguage = 'appLanguage';
   static const _kKeepScreenOn = 'keepScreenOn';
+  static const _kTextColor = 'customTextColor';
+  static const _kBgColor = 'customBgColor';
   static const _kBibles = 'bibles';
   static const _kCommentaries = 'commentaries';
   static const _kHymns = 'hymns';
@@ -24,6 +26,8 @@ class SettingsProvider with ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   AppLanguage _language = AppLanguage.korean;
   bool _keepScreenOn = false; // 화면 꺼짐 방지 (기본값: 시스템 설정 따름)
+  Color? _customTextColor; // 읽기 화면 글자 색 (null = 테마 기본)
+  Color? _customBgColor; // 읽기 화면 바탕 색 (null = 테마 기본)
   List<SourceInfo> _bibles = [];
   List<SourceInfo> _commentaries = [];
   List<SourceInfo> _hymns = [];
@@ -34,6 +38,8 @@ class SettingsProvider with ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
   AppLanguage get appLanguage => _language;
   bool get keepScreenOn => _keepScreenOn;
+  Color? get customTextColor => _customTextColor;
+  Color? get customBgColor => _customBgColor;
   List<SourceInfo> get bibles => _bibles;
   List<SourceInfo> get commentaries => _commentaries;
   List<SourceInfo> get hymns => _hymns;
@@ -75,6 +81,10 @@ class SettingsProvider with ChangeNotifier {
     _language = AppLanguage
         .values[languageIndex.clamp(0, AppLanguage.values.length - 1)];
     _keepScreenOn = prefs.getBool(_kKeepScreenOn) ?? false;
+    final tc = prefs.getInt(_kTextColor);
+    _customTextColor = tc != null ? Color(tc) : null;
+    final bg = prefs.getInt(_kBgColor);
+    _customBgColor = bg != null ? Color(bg) : null;
 
     final biblesJson = prefs.getString(_kBibles);
     if (biblesJson != null && biblesJson.isNotEmpty) {
@@ -209,6 +219,30 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kKeepScreenOn, value);
+  }
+
+  /// 읽기 화면 글자 색. null이면 테마 기본색을 쓴다.
+  Future<void> setCustomTextColor(Color? color) async {
+    _customTextColor = color;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (color == null) {
+      await prefs.remove(_kTextColor);
+    } else {
+      await prefs.setInt(_kTextColor, color.toARGB32());
+    }
+  }
+
+  /// 읽기 화면 바탕 색. null이면 테마 기본색을 쓴다.
+  Future<void> setCustomBgColor(Color? color) async {
+    _customBgColor = color;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (color == null) {
+      await prefs.remove(_kBgColor);
+    } else {
+      await prefs.setInt(_kBgColor, color.toARGB32());
+    }
   }
 
   Future<bool> toggleSource(SourceInfo source, bool enabled) async {

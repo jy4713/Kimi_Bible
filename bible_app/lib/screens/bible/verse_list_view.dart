@@ -31,8 +31,8 @@ Future<void> showStrongDefinition(
   String word,
   String code,
 ) async {
-  final korean = context.read<SettingsProvider>().appLanguage ==
-      AppLanguage.korean;
+  final korean =
+      context.read<SettingsProvider>().appLanguage == AppLanguage.korean;
   final definition =
       await DictionaryRepository.instance.lookup(code, korean: korean);
   if (!context.mounted) return;
@@ -218,8 +218,8 @@ class VerseListViewState extends State<VerseListView> {
     final y = relY(index);
     final c = controller;
     if (y == null || !c.hasClients) return;
-    final target = (c.offset + y - _topPadding)
-        .clamp(0.0, c.position.maxScrollExtent);
+    final target =
+        (c.offset + y - _topPadding).clamp(0.0, c.position.maxScrollExtent);
     c.jumpTo(target);
   }
 
@@ -232,8 +232,7 @@ class VerseListViewState extends State<VerseListView> {
     if (y == null || !c.hasClients) return;
     final delta = y - targetRelY;
     if (delta.abs() < 0.5) return;
-    final target =
-        (c.offset + delta).clamp(0.0, c.position.maxScrollExtent);
+    final target = (c.offset + delta).clamp(0.0, c.position.maxScrollExtent);
     c.jumpTo(target);
   }
 
@@ -304,18 +303,32 @@ class _VerseRowState extends State<_VerseRow> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    // 사용자가 지정한 읽기 글자 색이 있으면 본문에 적용한다 (Strong 번호 단어의
+    // 강조색/절 번호색은 그대로 둔다).
+    final customTextColor = context.watch<SettingsProvider>().customTextColor;
     final textStyle = TextStyle(
       fontSize: widget.fontSize,
       height: 1.6,
+      color: customTextColor,
       decoration: widget.note != null ? TextDecoration.underline : null,
-      decorationStyle:
-          widget.note != null ? TextDecorationStyle.dashed : null,
+      decorationStyle: widget.note != null ? TextDecorationStyle.dashed : null,
       decorationColor: widget.note != null ? colorScheme.primary : null,
       decorationThickness: widget.note != null ? 1.4 : null,
     );
 
     final verse = widget.verse;
     final hasStrong = verse.hasStrong;
+
+    // 절 번호와 본문은 같은 글자 크기와 줄 높이를 사용한다. Row의 시작
+    // 위치에 그대로 배치해 글자 크기 변경에 따른 별도 보정을 없앤다.
+    final numberStyle = TextStyle(
+      fontSize: widget.fontSize,
+      height: 1.6,
+      fontWeight: FontWeight.bold,
+      color: widget.selected
+          ? colorScheme.primary
+          : colorScheme.primary.withValues(alpha: 0.85),
+    );
 
     // For Strong's sources the verse text is rendered as individually
     // tappable words (tap = dictionary popup), so the whole-verse text tap
@@ -325,6 +338,8 @@ class _VerseRowState extends State<_VerseRow> {
         ? null
         : () => widget.onVerseTap!(verse.verse);
 
+    // 본문 span: RichText/Text 양쪽 모두 이 span을 그대로 쓴다.
+    final TextSpan bodySpan;
     Widget textWidget;
     if (hasStrong) {
       _recognizers
@@ -336,7 +351,10 @@ class _VerseRowState extends State<_VerseRow> {
             TextSpan(
               text: seg.word,
               style: textStyle.copyWith(
-                color: colorScheme.primary,
+                // 사용자 지정 글자 색이 있으면 그 색을 따르고, 두께로만
+                // 탭 가능한 Strong 단어임을 구분한다. 미지정 시엔 기존
+                // 강조색(하늘색)을 유지한다.
+                color: customTextColor ?? colorScheme.primary,
                 fontWeight: FontWeight.w500,
               ),
               recognizer: _makeRecognizer(seg.word, seg.strongCode!),
@@ -346,8 +364,10 @@ class _VerseRowState extends State<_VerseRow> {
           const TextSpan(text: ' '),
         ],
       ];
-      textWidget = RichText(text: TextSpan(children: spans));
+      bodySpan = TextSpan(children: spans);
+      textWidget = RichText(text: bodySpan);
     } else {
+      bodySpan = TextSpan(text: verse.text, style: textStyle);
       textWidget = Text(verse.text, style: textStyle);
     }
 
@@ -360,8 +380,9 @@ class _VerseRowState extends State<_VerseRow> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap:
-                widget.onVerseTap == null ? null : () => widget.onVerseTap!(verse.verse),
+            onTap: widget.onVerseTap == null
+                ? null
+                : () => widget.onVerseTap!(verse.verse),
             borderRadius: BorderRadius.circular(4),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -369,13 +390,7 @@ class _VerseRowState extends State<_VerseRow> {
                 children: [
                   Text(
                     '${verse.verse}',
-                    style: TextStyle(
-                      fontSize: widget.fontSize * 0.8,
-                      fontWeight: FontWeight.bold,
-                      color: widget.selected
-                          ? colorScheme.primary
-                          : colorScheme.primary.withValues(alpha: 0.85),
-                    ),
+                    style: numberStyle,
                   ),
                   if (widget.note != null)
                     Container(

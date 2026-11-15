@@ -439,6 +439,27 @@ class _CompareVerseList extends StatelessWidget {
     Color(0xFF3F51B5), // indigo
   ];
 
+  /// The exact span [_translationText] renders for one translation
+  /// (label only, when [text] is null).
+  TextSpan _spanFor(int index, String? text, TextStyle bodyStyle) {
+    final color = _tints[index % _tints.length];
+    final label = sources[index].name;
+    return TextSpan(
+      children: [
+        TextSpan(
+          text: '[$label] ',
+          style: TextStyle(
+            fontSize: fontSize,
+            height: 1.6,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        TextSpan(text: text ?? '', style: bodyStyle),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // verse number -> text, per translation.
@@ -449,12 +470,43 @@ class _CompareVerseList extends StatelessWidget {
     final maxVerse = maps.fold<int>(
         0, (m, map) => map.keys.fold(m, (a, k) => k > a ? k : a));
 
+    // 사용자 지정 읽기 글자 색 적용 ([역본이름] 강조색은 그대로 둔다).
+    final customTextColor = context.watch<SettingsProvider>().customTextColor;
+    final bodyStyle = TextStyle(
+      fontSize: fontSize,
+      height: 1.6,
+      color: customTextColor,
+    );
+    // 절 번호도 본문과 동일한 글자 크기와 줄 높이를 사용한다. 같은 높이의
+    // 첫 줄을 Row의 시작 위치에 그대로 놓으므로 글자 크기를 바꿔도 어긋나지
+    // 않는다.
+    final numberStyle = TextStyle(
+      fontSize: fontSize,
+      height: 1.6,
+      fontWeight: FontWeight.bold,
+      color: Theme.of(context).colorScheme.primary,
+    );
+    final colCount = sources.length;
+    final numberPainter = TextPainter(
+      text: TextSpan(text: '$maxVerse', style: numberStyle),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final numberWidth =
+        numberPainter.width + 8 < 34 ? 34.0 : numberPainter.width + 8;
+
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       itemCount: maxVerse,
       itemBuilder: (_, i) {
         final verseNumber = i + 1;
+        final firstText = maps[0][verseNumber];
+        final numberTop =
+            firstText == null && cmp.axis == Axis.vertical && colCount > 1
+                ? 6.0
+                : 0.0;
         return Padding(
           key: verseKeys[verseNumber] ??= GlobalKey(),
           padding: const EdgeInsets.symmetric(vertical: 5),
@@ -462,22 +514,14 @@ class _CompareVerseList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: 30,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 2),
-                    child: Text(
-                      '$verseNumber',
-                      maxLines: 1,
-                      softWrap: false,
-                      style: TextStyle(
-                        fontSize: fontSize * 0.8,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
+                width: numberWidth,
+                child: Padding(
+                  padding: EdgeInsets.only(left: 2, top: numberTop),
+                  child: Text(
+                    '$verseNumber',
+                    maxLines: 1,
+                    softWrap: false,
+                    style: numberStyle,
                   ),
                 ),
               ),
@@ -519,27 +563,13 @@ class _CompareVerseList extends StatelessWidget {
 
   Widget _translationText(BuildContext context, int index, String? text,
       {bool left = false, bool top = false}) {
-    final color = _tints[index % _tints.length];
-    final label = sources[index].name;
-    final bodyStyle = TextStyle(fontSize: fontSize, height: 1.6);
+    final customTextColor = context.watch<SettingsProvider>().customTextColor;
+    final bodyStyle =
+        TextStyle(fontSize: fontSize, height: 1.6, color: customTextColor);
 
     Widget content = text == null
         ? const SizedBox.shrink()
-        : Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: '[$label] ',
-                  style: TextStyle(
-                    fontSize: fontSize * 0.85,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                TextSpan(text: text, style: bodyStyle),
-              ],
-            ),
-          );
+        : Text.rich(_spanFor(index, text, bodyStyle));
 
     if (left) {
       content = Padding(

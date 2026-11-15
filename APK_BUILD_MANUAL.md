@@ -48,18 +48,36 @@ C:/Utils/flutter/bin/flutter.bat doctor
 cd /c/Temp/workspace/Bible_app/bible_app
 ```
 
-### 3-2. 빌드 실행
+### 3-2. 일반 빌드 전 버전 라벨 갱신
+
+새 APK를 만들 때는 저장소 루트에서 먼저 버전 라벨을 갱신한 뒤 프로젝트 폴로 돌아옵니다.
+
+```bash
+cd /c/Temp/workspace/Bible_app
+python bump_version.py
+cd bible_app
+```
+
+> 버전 라벨은 설정 화면의 `(YYYYMMDD.vN)`에 표시되며, 카운터는 저장소 루트의
+> `apk_build_counter.txt`에 저장됩니다. 이미 이번 변경에 맞게 갱신했다면 다시 실행하지 않습니다.
+
+### 3-3. 빌드 실행 (2026-11-15 성공 확인)
+
+다음은 현재 PC의 Git Bash에서 실제로 성공한 명령입니다. 버전 라벨 갱신 후 그대로 실행하세요.
 
 ```bash
 export PATH="$PATH:/c/Windows/System32/WindowsPowerShell/v1.0"
-/c/Utils/flutter/bin/flutter.bat build apk --release --android-skip-build-dependency-validation
+env 'PROGRAMFILES(X86)=C:\Program Files (x86)' "/c/Utils/flutter/bin/flutter.bat" build apk --release --android-skip-build-dependency-validation
 ```
 
+> - `env 'PROGRAMFILES(X86)=C:\Program Files (x86)'`는 Git Bash에서 해당 환경 변수가
+>   없다는 오류를 방지합니다. 일반 CMD/PowerShell이 아니라 **Git Bash용 명령**입니다.
 > - `--android-skip-build-dependency-validation` 플래그는 **꼭 필요**합니다.
->   이 프로젝트는 Gradle/AGP 버전 조합 때문에 Flutter의 버전 검사를 우회해야 합니다.
+>   현재 프로젝트의 Gradle 8.4가 Flutter가 요구하는 최소 8.14보다 낮아 버전 검사에서
+>   빌드가 막히므로, Android Gradle Plugin/Kotlin을 바꾸지 않는 범위에서 이 검사만 생략합니다.
 > - 첫 빌드는 4~8분, 이후 변경분만 다시 빌드하면 2~4분 걸립니다.
 
-### 3-3. 결과물 확인
+### 3-4. 결과물 확인
 
 빌드 성공 메시지:
 ```
@@ -112,7 +130,7 @@ git log --oneline
 
 ## 6. 코드를 수정한 뒤 다시 빌드할 때
 
-1. 소스를 저장한 뒤 3-2의 빌드 명령을 그대로 다시 실행하면 됩니다.
+1. 새 빌드면 3-2로 버전 라벨을 갱신하고, 3-3의 빌드 명령을 그대로 실행합니다.
 2. `pubspec.yaml`을 건드렸다면(패키지 추가/제거) 먼저:
    ```bash
    /c/Utils/flutter/bin/flutter.bat pub get
@@ -140,6 +158,8 @@ git log --oneline
 |---|---|
 | `flutter 명령을 찾을 수 없음` | 경로를 `C:\Utils\flutter\bin\flutter.bat` 전체로 지정 |
 | PowerShell 관련 오류 | `export PATH="$PATH:/c/Windows/System32/WindowsPowerShell/v1.0"` 실행 후 재시도 |
+| `%PROGRAMFILES(X86)% environment variable not found.` | Git Bash에서 3-3처럼 `env 'PROGRAMFILES(X86)=C:\Program Files (x86)'`를 Flutter 명령 앞에 추가 |
+| `Gradle 8.4`가 Flutter 최소 요구 `8.14`보다 낮다는 오류 | `--android-skip-build-dependency-validation` 플래그를 붙인 3-3 명령 사용 |
 | Gradle 메모리 오류 | 이미 `android\gradle.properties`에 `-Xmx4g` 설정됨 |
 | 빌드는 됐는데 변경 내용이 반영 안 됨 | `flutter clean` 후 재빌드 |
 | 로그의 `kotlin metadata 'e:'` 줄 | 무시필도 없는 경고. 빌드 결과에 영향 없음 |

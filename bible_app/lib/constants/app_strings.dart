@@ -145,6 +145,19 @@ class AppStrings {
   // recognize and pick theirs regardless of the current UI language.
   String get koreanLanguage => '한국어';
   String get englishLanguage => 'English';
+
+  // ── 색상 ─────────────────────────────────────────────────────────
+  String get colorsSection => isKorean ? '색상' : 'Colors';
+  String get fontColorLabel => isKorean ? '글자 색깔' : 'Text color';
+  String get bgColorLabel => isKorean ? '바탕 색깔' : 'Background color';
+  String get defaultColor => isKorean ? '기본값' : 'Default';
+  String get hexColorHint => '#RRGGBB';
+  String get invalidColorCode => isKorean
+      ? '올바른 색깔 코드가 아닙니다. (#RRGGBB)'
+      : 'Invalid color code. (#RRGGBB)';
+  String get colorPickerApply => isKorean ? '적용' : 'Apply';
+  String colorPickerTitle(String label) =>
+      isKorean ? '$label 변경' : 'Change $label';
   String get bibleTranslations => isKorean ? '성경 번역' : 'Bible translations';
   String get addBibleFile =>
       isKorean ? '성경 파일 추가 (.bdb / .sdb)' : 'Add Bible file (.bdb / .sdb)';

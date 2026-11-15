@@ -57,8 +57,8 @@ class _HymnDetailScreenState extends State<HymnDetailScreen>
     // views (one per tab) caused a stale chapter from the keep-alive bucket
     // to flash for a frame on every tab switch.
     _pageController = PageController(initialPage: _currentIndex);
-    _tabController =
-        TabController(length: 2, vsync: this)..addListener(_onTabAnim);
+    _tabController = TabController(length: 2, vsync: this)
+      ..addListener(_onTabAnim);
   }
 
   @override
@@ -127,7 +127,8 @@ class _HymnDetailScreenState extends State<HymnDetailScreen>
               chapter: widget.allHymns[i].chapter,
               onZoom: _onViewerScale,
             )
-          : _LyricsPage(hymn: widget.allHymns[i], reading: widget.source.isReading),
+          : _LyricsPage(
+              hymn: widget.allHymns[i], reading: widget.source.isReading),
     );
 
     return Scaffold(
@@ -256,8 +257,7 @@ class _SheetMusicPageState extends State<_SheetMusicPage> {
     super.dispose();
   }
 
-  void _reportScale() =>
-      widget.onZoom(_transform.value.getMaxScaleOnAxis());
+  void _reportScale() => widget.onZoom(_transform.value.getMaxScaleOnAxis());
 
   Future<void> _loadImage() async {
     setState(() {
@@ -304,7 +304,8 @@ class _SheetMusicPageState extends State<_SheetMusicPage> {
 
 class _LyricsPage extends StatelessWidget {
   final HymnEntry hymn;
-  /// 교독문이면 본문 글자 크기(설정값)를 따르고, 찬송가 가사는 기존 고정 크기 유지.
+
+  /// 교독문과 찬송가 가사 모두 공통 본문 글자 크기 설정을 따른다.
   final bool reading;
 
   const _LyricsPage({required this.hymn, this.reading = false});
@@ -312,7 +313,8 @@ class _LyricsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 본문(가사/교독문)은 성경과 같은 본문 글자 크기 설정값을 사용한다.
-    final contentFont = context.watch<SettingsProvider>().fontSize;
+    final settings = context.watch<SettingsProvider>();
+    final contentFont = settings.fontSize;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -324,7 +326,11 @@ class _LyricsPage extends StatelessWidget {
                 fontSize: contentFont + 2, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          HtmlContent(html: hymn.text, fontSize: contentFont),
+          HtmlContent(
+            html: hymn.text,
+            fontSize: contentFont,
+            baseTextColor: settings.customTextColor,
+          ),
         ],
       ),
     );

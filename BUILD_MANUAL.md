@@ -61,6 +61,21 @@ flutter build apk --release --android-skip-build-dependency-validation
 - 설치: APK를 기기로 옮겨 설치하거나 `adb install app-release.apk`
 - 앱 ID: `kr.juchoi.holybible` (android/app/build.gradle.kts)
 
+#### 현재 PC의 Git Bash에서 성공한 명령 (2026-11-15 확인)
+
+`C:\Utils\flutter`에 SDK가 설치된 현재 작업 PC에서는 버전 라벨 갱신 후 다음 명령을 사용합니다.
+
+```bash
+cd /c/Temp/workspace/Bible_app/bible_app
+export PATH="$PATH:/c/Windows/System32/WindowsPowerShell/v1.0"
+env 'PROGRAMFILES(X86)=C:\Program Files (x86)' "/c/Utils/flutter/bin/flutter.bat" build apk --release --android-skip-build-dependency-validation
+```
+
+- `PROGRAMFILES(X86)`는 Git Bash에서 누락될 수 있으므로 `env`로 해당 명령에만 지정합니다.
+- 현재 Gradle 8.4가 Flutter의 최소 요구 버전 8.14보다 낮아 일반 빌드가 버전 검사에서
+  실패할 수 있습니다. 위 플래그로 검사를 생략한 release APK 빌드가 성공했습니다.
+- 성공 시 `bible_app/build/app/outputs/flutter-apk/app-release.apk`가 생성됩니다.
+
 ### 설치판은 새 앱으로 인식되나요?
 앱 ID(`applicationId`)와 서명 키가 같으면 **덮어쓰기(업데이트) 설치**됩니다. 완전 새 앱으로 인식되게 하려면 `android/app/build.gradle.kts`의 `applicationId`를 바꾸세요.
 
@@ -119,6 +134,8 @@ flutter build web --release
 | 증상 | 해결 |
 |---|---|
 | `powershell` 관련 Gradle 오류 | 1절의 PowerShell PATH 추가 |
+| `%PROGRAMFILES(X86)% environment variable not found.` | Git Bash에서는 3절의 성공 명령처럼 `env 'PROGRAMFILES(X86)=C:\Program Files (x86)'`를 Flutter 명령 앞에 추가 |
+| `Gradle 8.4`가 Flutter 최소 요구 `8.14`보다 낮다는 오류 | `--android-skip-build-dependency-validation` 플래그를 붙인 3절 명령 사용 |
 | 빌드가 버전 검사에서 멈춤 | `--android-skip-build-dependency-validation` 플래그 확인 |
 | 앱 업데이트 후 데이터가 옛것 | 앱은 assets를 기기 저장소에 한 번 복사해 쓰는데, 크기가 바뀐 에셋은 자동으로 갱신됨. 이상 시 앱 삭제 후 재설치 |
 | `flutter` 명령 인식 안 됨 | Flutter SDK의 `bin` 폴 더를 PATH에 등록 |
@@ -126,4 +143,4 @@ flutter build web --release
 
 ---
 
-최종 수정: 2026-09-20 (WEB_DEPLOY_MANUAL.md 신규 추가 — nginx 배포·wasm MIME·서비스워커 캐시 안내, 웹 섹션에 링크)
+최종 수정: 2026-11-15 (현재 PC에서 성공한 APK 빌드 명령과 Git Bash 환경 변수·Gradle 버전 검사 오류 대처법 추가)

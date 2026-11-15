@@ -222,15 +222,19 @@ class CommentaryScreenState extends State<CommentaryScreen> {
                                 strings.verseLabel(_entries[i].verse),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color:
-                                      Theme.of(context).colorScheme.primary,
-                                  fontSize: fontSize * 0.9,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontSize: fontSize,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               HtmlContent(
-                                  html: _entries[i].html,
-                                  fontSize: fontSize * 0.9),
+                                html: _entries[i].html,
+                                fontSize: fontSize,
+                                // 메인 글자만 사용자 지정 색으로 바꾸고, 주석
+                                // 본래의 강조색들은 그대로 둔다.
+                                baseTextColor: settings.customTextColor,
+                                rethemeHtmlColors: false,
+                              ),
                             ],
                           ),
                         ),

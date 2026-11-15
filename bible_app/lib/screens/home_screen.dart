@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../constants/app_strings.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/bottom_menu_bar.dart';
 import 'bible/bible_screen.dart';
 import 'bible/compare_screen.dart';
 import 'commentary/commentary_screen.dart';
@@ -53,6 +54,32 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
+  /// Largest label font size (scaled by the menu-font %) at which every label
+  /// still fits on one line inside its bottom-menu button. The size only ever
+  /// shrinks from the scaled target to prevent wrapping/overlap/overflow —
+  /// it never grows past the scaled target.
+  double _fitBottomLabelSize(List<String> labels, double uiFontPct) {
+    final target = 11.0 * uiFontPct / 100.0;
+    final maxWidth =
+        (MediaQuery.of(context).size.width / labels.length) - 16;
+    // best never exceeds target, so it is a valid font size for any pct
+    // (never clamp with a fixed lower bound — that would throw when the
+    // scaled target drops below it, blanking the whole screen gray).
+    var best = target;
+    for (final label in labels) {
+      final tp = TextPainter(
+        text: TextSpan(text: label, style: TextStyle(fontSize: target)),
+        maxLines: 1,
+        textDirection: TextDirection.ltr,
+      )..layout();
+      if (tp.width > maxWidth && tp.width > 0) {
+        final fitted = target * maxWidth / tp.width;
+        if (fitted < best) best = fitted;
+      }
+    }
+    return best;
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -64,6 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
       strings.responsiveReading,
       strings.commentary
     ];
+
+    // Bottom menu labels follow the menu-font % setting, but stop growing at
+    // the largest size that still fits every label on one line inside its
+    // button — no wrapping, overlap, or running off screen.
+    final bottomLabelSize = _fitBottomLabelSize(labels, settings.uiFontPct);
 
     return PopScope(
       // 첫 번째 뒤로가기는 토스트로 안내하고, 2초 안에 두 번째 누르면 앱을 종료한다.
@@ -108,41 +140,35 @@ class _HomeScreenState extends State<HomeScreen> {
             settings: const RouteSettings(name: '/'),
           ),
         ),
-        bottomNavigationBar: NavigationBar(
-          height: 54,
-          // Fixed label size on purpose: it must not follow the menu-font %
-          // setting, or long English labels ("Commentary", ...) wrap and
-          // break the button layout when the menu font is enlarged.
-          labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(fontSize: 11, height: 1.0),
-          ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: BottomMenuBar(
+          labels: labels,
+          icons: _icons,
+          selectedIcons: _selectedIcons,
           selectedIndex: _index,
-          onDestinationSelected: (i) {
-            // Close any open menu, then switch to the tapped tab.
-            _navigatorKey.currentState?.popUntil((r) => r.isFirst);
-            setState(() => _index = i);
-            if (i == 1) {
-              // Compare tab: follow the Bible reader's current location.
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _compareKey.currentState?.syncFromBible();
-              });
-            } else if (i == 4) {
-              // Commentary tab: jump to the exact verse being read.
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _commentaryKey.currentState?.openCurrentBibleLocation();
-              });
-            }
-          },
-          destinations: [
-            for (int i = 0; i < labels.length; i++)
-              NavigationDestination(
-                icon: Icon(_icons[i], size: 20),
-                selectedIcon: Icon(_selectedIcons[i], size: 20),
-                label: labels[i],
-              ),
-          ],
+          labelSize: bottomLabelSize,
+          onSelect: _selectTab,
+          ),
         ),
       ),
     );
+  }
+
+  void _selectTab(int i) {
+    // Close any open menu, then switch to the tapped tab.
+    _navigatorKey.currentState?.popUntil((r) => r.isFirst);
+    setState(() => _index = i);
+    if (i == 1) {
+      // Compare tab: follow the Bible reader's current location.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _compareKey.currentState?.syncFromBible();
+      });
+    } else if (i == 4) {
+      // Commentary tab: jump to the exact verse being read.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _commentaryKey.currentState?.openCurrentBibleLocation();
+      });
+    }
   }
 }

@@ -177,6 +177,22 @@ class _SettingsBody extends StatelessWidget {
           },
         ),
 
+        // ── 색상 ─────────────────────────────────────────────────────────
+        const Divider(),
+        _SectionHeader(strings.colorsSection),
+        _ColorRow(
+          label: strings.fontColorLabel,
+          color: settings.customTextColor,
+          onTap: () => _pickColor(context, settings, isText: true),
+          onDefault: () => settings.setCustomTextColor(null),
+        ),
+        _ColorRow(
+          label: strings.bgColorLabel,
+          color: settings.customBgColor,
+          onTap: () => _pickColor(context, settings, isText: false),
+          onDefault: () => settings.setCustomBgColor(null),
+        ),
+
         // ── 노트 ─────────────────────────────────────────────────────────
         const Divider(),
         _SectionHeader(strings.notes),
@@ -490,6 +506,34 @@ class _SettingsBody extends StatelessWidget {
     }
   }
 
+  Future<void> _pickColor(BuildContext context, SettingsProvider settings,
+      {required bool isText}) async {
+    final strings = AppStrings(settings.appLanguage);
+    final label = isText ? strings.fontColorLabel : strings.bgColorLabel;
+    final current = isText ? settings.customTextColor : settings.customBgColor;
+    final result = await showDialog<Object>(
+      context: context,
+      builder: (_) => _ColorPickerDialog(
+        title: strings.colorPickerTitle(label),
+        initial: current,
+      ),
+    );
+    if (result is Color) {
+      if (isText) {
+        await settings.setCustomTextColor(result);
+      } else {
+        await settings.setCustomBgColor(result);
+      }
+    } else if (result == 'default') {
+      // 기본값: 테마 기본색으로 복원한다.
+      if (isText) {
+        await settings.setCustomTextColor(null);
+      } else {
+        await settings.setCustomBgColor(null);
+      }
+    }
+  }
+
   Future<void> _renameSource(
       BuildContext context, SettingsProvider settings, SourceInfo src) async {
     final strings = AppStrings(settings.appLanguage);
@@ -584,6 +628,232 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// One settings row for a customizable color: shows the current swatch
+/// (or "Default"), opens the picker on tap, and resets via the trailing
+/// Default button.
+class _ColorRow extends StatelessWidget {
+  final String label;
+  final Color? color;
+  final VoidCallback onTap;
+  final VoidCallback onDefault;
+
+  const _ColorRow({
+    required this.label,
+    required this.color,
+    required this.onTap,
+    required this.onDefault,
+  });
+
+  static String _hex(Color c) =>
+      '#${c.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings(
+        Provider.of<SettingsProvider>(context, listen: false).appLanguage);
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: color ?? Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline,
+            width: 1,
+          ),
+        ),
+        child: color == null
+            ? const Icon(Icons.format_color_reset, size: 16)
+            : null,
+      ),
+      title: Text(label),
+      subtitle: Text(color == null ? strings.defaultColor : _hex(color!)),
+      trailing: TextButton(
+        onPressed: color == null ? null : onDefault,
+        child: Text(strings.defaultColor),
+      ),
+    );
+  }
+}
+
+/// Color picker dialog: H/S/L sliders, preset swatches and a hex input
+/// (#RRGGBB). Returns the chosen [Color], the string 'default' when the
+/// user tapped 기본값, or null when cancelled.
+class _ColorPickerDialog extends StatefulWidget {
+  final String title;
+  final Color? initial;
+
+  const _ColorPickerDialog({required this.title, this.initial});
+
+  @override
+  State<_ColorPickerDialog> createState() => _ColorPickerDialogState();
+}
+
+class _ColorPickerDialogState extends State<_ColorPickerDialog> {
+  late HSLColor _hsl;
+  final _hexController = TextEditingController();
+  String? _hexError;
+
+  static const _presets = [
+    Color(0xFFFFFFFF),
+    Color(0xFF000000),
+    Color(0xFFD32F2F),
+    Color(0xFFF57C00),
+    Color(0xFFFBC02D),
+    Color(0xFF388E3C),
+    Color(0xFF1976D2),
+    Color(0xFF7B1FA2),
+    Color(0xFF795548),
+    Color(0xFF384832),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _hsl = HSLColor.fromColor(
+        widget.initial ?? const Color(0xFFFFFFFF));
+    _hexController.text = _hex(_hsl.toColor());
+  }
+
+  @override
+  void dispose() {
+    _hexController.dispose();
+    super.dispose();
+  }
+
+  static String _hex(Color c) =>
+      '#${c.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+
+  void _applyHex(String input) {
+    var h = input.trim().replaceFirst('#', '');
+    if (h.length == 3) {
+      h = '${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}';
+    }
+    final v = int.tryParse(h, radix: 16);
+    if (h.length != 6 || v == null) {
+      setState(() => _hexError = 'bad');
+      return;
+    }
+    setState(() {
+      _hexError = null;
+      _hsl = HSLColor.fromColor(Color(0xFF000000 | v));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings(
+        Provider.of<SettingsProvider>(context, listen: false).appLanguage);
+    final color = _hsl.toColor();
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 44,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _slider('H', _hsl.hue, 0, 360, (v) => _hsl = _hsl.withHue(v)),
+          _slider('S', _hsl.saturation, 0, 1, (v) => _hsl = _hsl.withSaturation(v)),
+          _slider('L', _hsl.lightness, 0, 1, (v) => _hsl = _hsl.withLightness(v)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final p in _presets)
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _hsl = HSLColor.fromColor(p);
+                      _hexController.text = _hex(p);
+                      _hexError = null;
+                    });
+                  },
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: p,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _hexController,
+            decoration: InputDecoration(
+              hintText: strings.hexColorHint,
+              errorText: _hexError == null ? null : strings.invalidColorCode,
+              isDense: true,
+            ),
+            onChanged: (v) {
+              if (v.trim().replaceFirst('#', '').length >= 6) {
+                _applyHex(v);
+              }
+            },
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop('default'),
+          child: Text(strings.defaultColor),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(strings.cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            final v = _hexController.text.trim();
+            if (v.replaceFirst('#', '').length == 6) _applyHex(v);
+            if (_hexError != null) return;
+            Navigator.of(context).pop(_hsl.toColor());
+          },
+          child: Text(strings.colorPickerApply),
+        ),
+      ],
+    );
+  }
+
+  Widget _slider(String label, double value, double min, double max,
+      ValueChanged<double> onChanged) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 16,
+          child: Text(label, style: const TextStyle(fontSize: 12)),
+        ),
+        Expanded(
+          child: Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            onChanged: (v) => setState(() => onChanged(v)),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Value box shown at the right end of a font-size slider. Tapping it opens
