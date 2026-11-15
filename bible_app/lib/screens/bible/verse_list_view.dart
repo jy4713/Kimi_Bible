@@ -365,7 +365,14 @@ class _VerseRowState extends State<_VerseRow> {
         ],
       ];
       bodySpan = TextSpan(children: spans);
-      textWidget = RichText(text: bodySpan);
+      // Strong 본문도 일반 본문과 동일한 Text.rich 경로를 사용한다. RichText를
+      // 직접 쓰면 글자 배율뿐 아니라 첫 줄 기준선의 미세한 배치까지 달라져
+      // 절 번호와 어긋날 수 있다.
+      textWidget = Text.rich(
+        bodySpan,
+        strutStyle: StrutStyle.fromTextStyle(textStyle, forceStrutHeight: true),
+        textScaler: MediaQuery.textScalerOf(context),
+      );
     } else {
       bodySpan = TextSpan(text: verse.text, style: textStyle);
       textWidget = Text(verse.text, style: textStyle);
@@ -391,6 +398,8 @@ class _VerseRowState extends State<_VerseRow> {
                   Text(
                     '${verse.verse}',
                     style: numberStyle,
+                    strutStyle:
+                        StrutStyle.fromTextStyle(numberStyle, forceStrutHeight: true),
                   ),
                   if (widget.note != null)
                     Container(
