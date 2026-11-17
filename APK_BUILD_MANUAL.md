@@ -124,7 +124,7 @@ env 'PROGRAMFILES(X86)=C:\Program Files (x86)' "/c/Utils/flutter/bin/flutter.bat
 
 | 항목 | 값 |
 |---|---|
-| 키스토어 파일 | `bible_app\android\app\bible_release.jks` |
+| 키스토어 파일 | `bible_app\android\app\bible_release.jks` (깃에 포함됨) |
 | Key alias | `bible_release` |
 | storePassword / keyPassword | `bible2026keystore` |
 | 패키지명 (applicationId) | `kr.juchoi.holybible` |
