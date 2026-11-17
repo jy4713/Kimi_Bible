@@ -112,8 +112,63 @@ class _SettingsBody extends StatelessWidget {
             ),
             child: Text(
               strings.fontPreview,
-              style: TextStyle(fontSize: settings.fontSize, height: 1.6),
+              style:
+                  TextStyle(fontSize: settings.fontSize, height: settings.lineHeight),
             ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Text(strings.lineSpacingLabel,
+                  style: Theme.of(context).textTheme.titleMedium),
+              Expanded(
+                child: Slider(
+                  value: settings.lineSpacingPct,
+                  min: 50,
+                  max: 150,
+                  divisions: 100,
+                  label: '${settings.lineSpacingPct.round()}%',
+                  onChanged: settings.setLineSpacingPct,
+                ),
+              ),
+              _SliderValueBox(
+                label: '${settings.lineSpacingPct.round()}%',
+                value: settings.lineSpacingPct,
+                min: 50,
+                max: 150,
+                width: 58,
+                onChanged: settings.setLineSpacingPct,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Text(strings.verseSpacingLabel,
+                  style: Theme.of(context).textTheme.titleMedium),
+              Expanded(
+                child: Slider(
+                  value: settings.verseSpacingPct,
+                  min: 50,
+                  max: 150,
+                  divisions: 100,
+                  label: '${settings.verseSpacingPct.round()}%',
+                  onChanged: settings.setVerseSpacingPct,
+                ),
+              ),
+              _SliderValueBox(
+                label: '${settings.verseSpacingPct.round()}%',
+                value: settings.verseSpacingPct,
+                min: 50,
+                max: 150,
+                width: 58,
+                onChanged: settings.setVerseSpacingPct,
+              ),
+            ],
           ),
         ),
         _SectionHeader(strings.language),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../constants/app_strings.dart';
 import '../../constants/book_names.dart';
@@ -9,6 +11,7 @@ import '../../providers/bible_provider.dart';
 import '../../providers/notes_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../repositories/bible_repository.dart';
+import '../../utils/verse_copy.dart';
 import 'bible_search_screen.dart';
 import '_book_selector_dialog.dart';
 import '_translation_selector.dart';
@@ -223,6 +226,54 @@ class _BibleScreenState extends State<BibleScreen> {
       }
     }
     return ranges;
+  }
+
+  /// 선택한 절들의 복사/공유용 텍스트 (현재 역본 내용만)를 만든다.
+  String _selectedVersesCopyText(BibleProvider bible, List<SourceInfo> sources) {
+    final settings = context.read<SettingsProvider>();
+    final strings = AppStrings(settings.appLanguage);
+    final src = sources.isEmpty
+        ? null
+        : sources.firstWhere((s) => s.id == bible.selectedId,
+            orElse: () => sources.first);
+    if (src == null) return '';
+    final info = bookInfoOf(bible.book);
+    final bookName = strings.isKorean ? info.korean : info.english;
+    final chosen = [
+      for (final v in bible.verses)
+        if (_selectedVerses.contains(v.verse)) v,
+    ];
+    return buildSingleTranslationCopyText(
+      sourceName: src.name,
+      bookName: bookName,
+      chapter: bible.chapter,
+      verses: chosen,
+    );
+  }
+
+  Future<void> _copySelected(
+      BibleProvider bible, List<SourceInfo> sources) async {
+    final strings = AppStrings(context.read<SettingsProvider>().appLanguage);
+    final text = _selectedVersesCopyText(bible, sources);
+    if (text.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(strings.copiedToClipboard)),
+    );
+    _exitSelection();
+  }
+
+  Future<void> _shareSelected(
+      BibleProvider bible, List<SourceInfo> sources) async {
+    final text = _selectedVersesCopyText(bible, sources);
+    if (text.isEmpty) return;
+    final box = context.findRenderObject() as RenderBox?;
+    await Share.share(
+      text,
+      sharePositionOrigin:
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+    );
   }
 
   Future<void> _addNote(BibleProvider bible) async {
@@ -651,6 +702,20 @@ class _BibleScreenState extends State<BibleScreen> {
                                         size: 18),
                                     label: Text(strings.addNote),
                                     onPressed: () => _addNote(bible),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.copy_outlined,
+                                        size: 20),
+                                    tooltip: strings.copy,
+                                    onPressed: () =>
+                                        _copySelected(bible, sources),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.share_outlined,
+                                        size: 20),
+                                    tooltip: strings.share,
+                                    onPressed: () =>
+                                        _shareSelected(bible, sources),
                                   ),
                                   TextButton(
                                     onPressed: _exitSelection,

@@ -21,6 +21,7 @@ dependencies:
   html: ^0.15.4
   cupertino_icons: ^1.0.8
   wakelock_plus: 1.2.10
+  share_plus: ^10.0.0
 
 dev_dependencies:
   flutter_test:

@@ -329,6 +329,7 @@ class _LyricsPage extends StatelessWidget {
           HtmlContent(
             html: hymn.text,
             fontSize: contentFont,
+            lineHeight: settings.lineHeight,
             baseTextColor: settings.customTextColor,
           ),
         ],

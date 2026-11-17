@@ -21,6 +21,9 @@ class HtmlContent extends StatelessWidget {
   final String html;
   final double fontSize;
 
+  /// 본문 줄 높이 배율 (기본 1.6). 설정의 줄간격 비율이 적용된 값을 넘긴다.
+  final double lineHeight;
+
   /// 사용자가 설정한 읽기 글자 색. 지정되면 기본 텍스트에 적용된다.
   /// [rethemeHtmlColors]가 true면 HTML 내 강조색은 이 색과 구분되는 색으로
   /// 자동 교체되고, false면 강조색은 테마에 맞게 보정만 된다.
@@ -32,6 +35,7 @@ class HtmlContent extends StatelessWidget {
     super.key,
     required this.html,
     this.fontSize = 14.0,
+    this.lineHeight = 1.6,
     this.baseTextColor,
     this.rethemeHtmlColors = true,
   });
@@ -44,7 +48,7 @@ class HtmlContent extends StatelessWidget {
     final bg = theme.scaffoldBackgroundColor;
     final baseStyle = TextStyle(
       fontSize: fontSize,
-      height: 1.6,
+      height: lineHeight,
       color: baseTextColor ?? theme.colorScheme.onSurface,
     );
     final isDark = theme.brightness == Brightness.dark;

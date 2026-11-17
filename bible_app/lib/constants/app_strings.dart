@@ -20,6 +20,10 @@ class AppStrings {
 
   // Common actions / state
   String get cancel => isKorean ? '취소' : 'Cancel';
+  String get copy => isKorean ? '복사' : 'Copy';
+  String get share => isKorean ? '공유' : 'Share';
+  String get copiedToClipboard =>
+      isKorean ? '클립보드에 복사되었습니다' : 'Copied to clipboard';
   String get delete => isKorean ? '삭제' : 'Delete';
   String get save => isKorean ? '저장' : 'Save';
   String get edit => isKorean ? '수정' : 'Edit';
@@ -128,6 +132,10 @@ class AppStrings {
   String get fontPreview => isKorean
       ? '태초에 하나님이 천지를 창조하시니라. (창 1:1)'
       : 'In the beginning God created the heaven and the earth. (Genesis 1:1)';
+  String get lineSpacingLabel =>
+      isKorean ? '줄간격' : 'Line spacing';
+  String get verseSpacingLabel =>
+      isKorean ? '절간격' : 'Verse spacing';
   String get pressBackAgainToExit =>
       isKorean ? '뒤로가기를 한 번 더 누르면 앱이 종료됩니다' : 'Press back again to exit';
   String get theme => isKorean ? '테마' : 'Theme';

@@ -9,6 +9,8 @@ import '../models/source_info.dart';
 class SettingsProvider with ChangeNotifier {
   static const _kFontSize = 'fontSize';
   static const _kUiFontPct = 'uiFontPct';
+  static const _kLineSpacingPct = 'lineSpacingPct';
+  static const _kVerseSpacingPct = 'verseSpacingPct';
   static const _kThemeMode = 'themeMode';
   static const _kLanguage = 'appLanguage';
   static const _kKeepScreenOn = 'keepScreenOn';
@@ -23,6 +25,8 @@ class SettingsProvider with ChangeNotifier {
 
   double _fontSize = 16.0; // Bible / commentary content text
   double _uiFontPct = 100.0; // menus, titles, buttons (70–130 % of default)
+  double _lineSpacingPct = 100.0; // content line spacing (50–150 % of default)
+  double _verseSpacingPct = 100.0; // gap between verses (50–150 % of default)
   ThemeMode _themeMode = ThemeMode.system;
   AppLanguage _language = AppLanguage.korean;
   bool _keepScreenOn = false; // 화면 꺼짐 방지 (기본값: 시스템 설정 따름)
@@ -35,6 +39,14 @@ class SettingsProvider with ChangeNotifier {
   double get fontSize => _fontSize;
   double get uiFontPct => _uiFontPct;
   double get uiScale => _uiFontPct / 100.0;
+  double get lineSpacingPct => _lineSpacingPct;
+  double get verseSpacingPct => _verseSpacingPct;
+
+  /// 본문 줄 높이 배율. 기본 줄 높이 1.6에 줄간격 비율을 곱한 값이다.
+  double get lineHeight => 1.6 * (_lineSpacingPct / 100.0);
+
+  /// 절 사이 세로 여백 배율 (1.0 = 기본 간격).
+  double get verseSpacing => _verseSpacingPct / 100.0;
   ThemeMode get themeMode => _themeMode;
   AppLanguage get appLanguage => _language;
   bool get keepScreenOn => _keepScreenOn;
@@ -76,6 +88,8 @@ class SettingsProvider with ChangeNotifier {
 
     _fontSize = prefs.getDouble(_kFontSize) ?? 16.0;
     _uiFontPct = prefs.getDouble(_kUiFontPct) ?? 100.0;
+    _lineSpacingPct = prefs.getDouble(_kLineSpacingPct) ?? 100.0;
+    _verseSpacingPct = prefs.getDouble(_kVerseSpacingPct) ?? 100.0;
     _themeMode = ThemeMode.values[prefs.getInt(_kThemeMode) ?? 0];
     final languageIndex = prefs.getInt(_kLanguage) ?? AppLanguage.korean.index;
     _language = AppLanguage
@@ -195,6 +209,20 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_kUiFontPct, _uiFontPct);
+  }
+
+  Future<void> setLineSpacingPct(double pct) async {
+    _lineSpacingPct = pct.clamp(50.0, 150.0);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_kLineSpacingPct, _lineSpacingPct);
+  }
+
+  Future<void> setVerseSpacingPct(double pct) async {
+    _verseSpacingPct = pct.clamp(50.0, 150.0);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_kVerseSpacingPct, _verseSpacingPct);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {

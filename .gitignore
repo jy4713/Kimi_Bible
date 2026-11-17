@@ -29,3 +29,4 @@ bible_app/windows/
 # ── Raw source data backup (already copied into bible_app/assets) ───────────
 # Keep on disk locally, but don't sync to git — the build only needs assets/.
 data/
+*.tar.gz

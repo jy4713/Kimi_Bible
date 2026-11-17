@@ -303,12 +303,13 @@ class _VerseRowState extends State<_VerseRow> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final settings = context.watch<SettingsProvider>();
     // 사용자가 지정한 읽기 글자 색이 있으면 본문에 적용한다 (Strong 번호 단어의
     // 강조색/절 번호색은 그대로 둔다).
-    final customTextColor = context.watch<SettingsProvider>().customTextColor;
+    final customTextColor = settings.customTextColor;
     final textStyle = TextStyle(
       fontSize: widget.fontSize,
-      height: 1.6,
+      height: settings.lineHeight,
       color: customTextColor,
       decoration: widget.note != null ? TextDecoration.underline : null,
       decorationStyle: widget.note != null ? TextDecorationStyle.dashed : null,
@@ -323,7 +324,7 @@ class _VerseRowState extends State<_VerseRow> {
     // 위치에 그대로 배치해 글자 크기 변경에 따른 별도 보정을 없앤다.
     final numberStyle = TextStyle(
       fontSize: widget.fontSize,
-      height: 1.6,
+      height: settings.lineHeight,
       fontWeight: FontWeight.bold,
       color: widget.selected
           ? colorScheme.primary
@@ -382,7 +383,7 @@ class _VerseRowState extends State<_VerseRow> {
       color: widget.selected
           ? colorScheme.primaryContainer.withValues(alpha: 0.55)
           : Colors.transparent,
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4 * settings.verseSpacing),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../constants/app_strings.dart';
 import '../../constants/book_names.dart';
@@ -8,6 +10,7 @@ import '../../providers/bible_provider.dart';
 import '../../providers/compare_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../repositories/bible_repository.dart';
+import '../../utils/verse_copy.dart';
 import '_book_selector_dialog.dart';
 import '_translation_selector.dart';
 import '../../widgets/settings_action_button.dart';
@@ -38,10 +41,84 @@ class CompareScreenState extends State<CompareScreen> {
   final Map<int, GlobalKey> _verseKeys = <int, GlobalKey>{};
   int? _pendingVerse;
 
+  // Verse selection for copy/share: verse numbers of the CURRENT chapter.
+  final Set<int> _selectedVerses = <int>{};
+  bool _selectionMode = false;
+
+  void _exitSelection() {
+    if (_selectionMode || _selectedVerses.isNotEmpty) {
+      setState(() {
+        _selectionMode = false;
+        _selectedVerses.clear();
+      });
+    }
+  }
+
+  /// Tapping a verse number toggles selection (first tap starts the mode).
+  void _onVerseTap(int verseNumber) {
+    setState(() {
+      if (_selectedVerses.contains(verseNumber)) {
+        _selectedVerses.remove(verseNumber);
+      } else {
+        _selectedVerses.add(verseNumber);
+      }
+      _selectionMode = _selectedVerses.isNotEmpty;
+    });
+  }
+
+  /// 선택한 절들의 복사/공유 텍스트 — 절별로 역본 순서대로 모두 포함한다.
+  String _selectedCopyText(
+      CompareProvider cmp, List<SourceInfo> selectedSources) {
+    final settings = context.read<SettingsProvider>();
+    final strings = AppStrings(settings.appLanguage);
+    final info = bookInfoOf(cmp.book);
+    final bookName = strings.isKorean ? info.korean : info.english;
+    final sorted = _selectedVerses.toList()..sort();
+    final translations = [
+      for (final s in selectedSources)
+        (
+          name: s.name,
+          byVerse: {for (final v in cmp.versesFor(s.id)) v.verse: v.text},
+        ),
+    ];
+    return buildCompareCopyText(
+      bookName: bookName,
+      chapter: cmp.chapter,
+      sortedVerseNumbers: sorted,
+      translations: translations,
+    );
+  }
+
+  Future<void> _copySelected(
+      CompareProvider cmp, List<SourceInfo> selectedSources) async {
+    final strings = AppStrings(context.read<SettingsProvider>().appLanguage);
+    final text = _selectedCopyText(cmp, selectedSources);
+    if (text.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(strings.copiedToClipboard)),
+    );
+    _exitSelection();
+  }
+
+  Future<void> _shareSelected(
+      CompareProvider cmp, List<SourceInfo> selectedSources) async {
+    final text = _selectedCopyText(cmp, selectedSources);
+    if (text.isEmpty) return;
+    final box = context.findRenderObject() as RenderBox?;
+    await Share.share(
+      text,
+      sharePositionOrigin:
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+    );
+  }
+
   /// Called by HomeScreen whenever the Compare tab is selected, so the
   /// comparison opens at the book/chapter/verse the Bible reader is showing.
   void syncFromBible() async {
     if (!mounted) return;
+    _exitSelection();
     final bible = context.read<BibleProvider>();
     final sources = context.read<SettingsProvider>().enabledBibles;
     final cmp = context.read<CompareProvider>();
@@ -109,6 +186,7 @@ class CompareScreenState extends State<CompareScreen> {
   }
 
   void _prevChapter(CompareProvider cmp, List<SourceInfo> sources) {
+    _exitSelection();
     _pendingVerse = null;
     _verseKeys.clear();
     if (cmp.chapter > 1) {
@@ -120,6 +198,7 @@ class CompareScreenState extends State<CompareScreen> {
   }
 
   void _nextChapter(CompareProvider cmp, List<SourceInfo> sources) {
+    _exitSelection();
     _pendingVerse = null;
     _verseKeys.clear();
     final info = bookInfoOf(cmp.book);
@@ -160,6 +239,7 @@ class CompareScreenState extends State<CompareScreen> {
         if (verse != null) _scrollToVerse(cmp, verse);
         return;
       }
+      _exitSelection();
       _verseKeys.clear();
       if (verse != null) {
         // Keep the pending-verse scroll target across the rebuild.
@@ -203,6 +283,7 @@ class CompareScreenState extends State<CompareScreen> {
         if (verse != null) _scrollToVerse(cmp, verse);
         return;
       }
+      _exitSelection();
       _verseKeys.clear();
       if (verse != null) {
         // Keep the pending-verse scroll target across the rebuild.
@@ -384,31 +465,73 @@ class CompareScreenState extends State<CompareScreen> {
           const SettingsActionButton(),
         ],
       ),
-      body: sources.isEmpty
-          ? Center(child: Text(strings.noData))
-          : cmp.loading
-              ? const Center(child: CircularProgressIndicator())
-              : cmp.error != null
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(
-                          strings.errorLabel(cmp.error!),
-                          style: TextStyle(
-                              color: Theme.of(context).colorScheme.error),
-                        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: sources.isEmpty
+                ? Center(child: Text(strings.noData))
+                : cmp.loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : cmp.error != null
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(
+                                strings.errorLabel(cmp.error!),
+                                style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error),
+                              ),
+                            ),
+                          )
+                        : _CompareVerseList(
+                            // Keyed by chapter so a chapter change always
+                            // starts at the top of the list.
+                            key: ValueKey('${cmp.book}:${cmp.chapter}'),
+                            cmp: cmp,
+                            sources: selectedSources,
+                            fontSize: settings.fontSize,
+                            lineHeight: settings.lineHeight,
+                            verseSpacing: settings.verseSpacing,
+                            scrollController: _scroll,
+                            verseKeys: _verseKeys,
+                            selectedVerses: _selectedVerses,
+                            onVerseTap: _onVerseTap,
+                          ),
+          ),
+          if (_selectionMode)
+            SafeArea(
+              child: Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        strings.selectedVersesCount(_selectedVerses.length),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    )
-                  : _CompareVerseList(
-                      // Keyed by chapter so a chapter change always
-                      // starts at the top of the list.
-                      key: ValueKey('${cmp.book}:${cmp.chapter}'),
-                      cmp: cmp,
-                      sources: selectedSources,
-                      fontSize: settings.fontSize,
-                      scrollController: _scroll,
-                      verseKeys: _verseKeys,
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.copy_outlined, size: 20),
+                      tooltip: strings.copy,
+                      onPressed: () => _copySelected(cmp, selectedSources),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.share_outlined, size: 20),
+                      tooltip: strings.share,
+                      onPressed: () => _shareSelected(cmp, selectedSources),
+                    ),
+                    TextButton(
+                      onPressed: _exitSelection,
+                      child: Text(strings.cancel),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -419,16 +542,28 @@ class _CompareVerseList extends StatelessWidget {
   final CompareProvider cmp;
   final List<SourceInfo> sources;
   final double fontSize;
+  final double lineHeight;
+  final double verseSpacing;
   final ScrollController scrollController;
   final Map<int, GlobalKey> verseKeys;
+
+  /// Currently selected verse numbers (selection mode).
+  final Set<int> selectedVerses;
+
+  /// Verse-number tap: toggles selection.
+  final void Function(int verseNumber)? onVerseTap;
 
   const _CompareVerseList({
     super.key,
     required this.cmp,
     required this.sources,
     required this.fontSize,
+    required this.lineHeight,
+    required this.verseSpacing,
     required this.scrollController,
     required this.verseKeys,
+    this.selectedVerses = const {},
+    this.onVerseTap,
   });
 
   // Colored label tints, one per selected translation (cycled).
@@ -450,7 +585,7 @@ class _CompareVerseList extends StatelessWidget {
           text: '[$label] ',
           style: TextStyle(
             fontSize: fontSize,
-            height: 1.6,
+            height: lineHeight,
             fontWeight: FontWeight.bold,
             color: color,
           ),
@@ -471,18 +606,14 @@ class _CompareVerseList extends StatelessWidget {
         0, (m, map) => map.keys.fold(m, (a, k) => k > a ? k : a));
 
     // 사용자 지정 읽기 글자 색 적용 ([역본이름] 강조색은 그대로 둔다).
-    final customTextColor = context.watch<SettingsProvider>().customTextColor;
-    final bodyStyle = TextStyle(
-      fontSize: fontSize,
-      height: 1.6,
-      color: customTextColor,
-    );
+    // 이 watch로 글자 색 변경 시 본문이 다시 그려진다.
+    context.watch<SettingsProvider>().customTextColor;
     // 절 번호도 본문과 동일한 글자 크기와 줄 높이를 사용한다. 같은 높이의
     // 첫 줄을 Row의 시작 위치에 그대로 놓으므로 글자 크기를 바꿔도 어긋나지
     // 않는다.
     final numberStyle = TextStyle(
       fontSize: fontSize,
-      height: 1.6,
+      height: lineHeight,
       fontWeight: FontWeight.bold,
       color: Theme.of(context).colorScheme.primary,
     );
@@ -507,9 +638,16 @@ class _CompareVerseList extends StatelessWidget {
             firstText == null && cmp.axis == Axis.vertical && colCount > 1
                 ? 6.0
                 : 0.0;
-        return Padding(
+        return Container(
           key: verseKeys[verseNumber] ??= GlobalKey(),
-          padding: const EdgeInsets.symmetric(vertical: 5),
+          color: selectedVerses.contains(verseNumber)
+              ? Theme.of(context)
+                  .colorScheme
+                  .primaryContainer
+                  .withValues(alpha: 0.55)
+              : Colors.transparent,
+          child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 5 * verseSpacing),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -517,11 +655,21 @@ class _CompareVerseList extends StatelessWidget {
                 width: numberWidth,
                 child: Padding(
                   padding: EdgeInsets.only(left: 2, top: numberTop),
-                  child: Text(
-                    '$verseNumber',
-                    maxLines: 1,
-                    softWrap: false,
-                    style: numberStyle,
+                  child: InkWell(
+                    onTap: onVerseTap == null
+                        ? null
+                        : () => onVerseTap!(verseNumber),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                      child: Text(
+                        '$verseNumber',
+                        maxLines: 1,
+                        softWrap: false,
+                        style: numberStyle,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -556,6 +704,7 @@ class _CompareVerseList extends StatelessWidget {
               ),
             ],
           ),
+          ),
         );
       },
     );
@@ -565,7 +714,7 @@ class _CompareVerseList extends StatelessWidget {
       {bool left = false, bool top = false}) {
     final customTextColor = context.watch<SettingsProvider>().customTextColor;
     final bodyStyle =
-        TextStyle(fontSize: fontSize, height: 1.6, color: customTextColor);
+        TextStyle(fontSize: fontSize, height: lineHeight, color: customTextColor);
 
     Widget content = text == null
         ? const SizedBox.shrink()

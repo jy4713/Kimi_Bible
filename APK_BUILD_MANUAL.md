@@ -77,7 +77,7 @@ env 'PROGRAMFILES(X86)=C:\Program Files (x86)' "/c/Utils/flutter/bin/flutter.bat
 >   빌드가 막히므로, Android Gradle Plugin/Kotlin을 바꾸지 않는 범위에서 이 검사만 생략합니다.
 > - 첫 빌드는 4~8분, 이후 변경분만 다시 빌드하면 2~4분 걸립니다.
 
-### 3-4. 결과물 확인
+### 3-4. 결과물 확인 및 파일명 규칙
 
 빌드 성공 메시지:
 ```
@@ -90,6 +90,31 @@ C:\Temp\workspace\Bible_app\bible_app\build\app\outputs\flutter-apk\app-release.
 ```
 
 이 APK를 폰으로 옮겨 설치하거나, 작업 폴 루트로 복사해 보관합니다.
+
+**★ APK 파일명에는 반드시 빌드 버전을 넣습니다** (2026-11-15 사용자 지정):
+
+```
+Bible_app_<날짜>_v<번호>_<아키텍처>.apk
+```
+
+예시:
+```
+Bible_app_20261115_v4_arm64.apk    ← 최신 폰용 (arm64-v8a)
+Bible_app_20261115_v4_armv7.apk    ← 구형 32비트 폰용 (armeabi-v7a)
+```
+
+버전은 3-2의 `bump_version.py` 출력 `(YYYYMMDD.vN)`에서 괄호와 점을
+언더스코어로 바꾼 값을 사용합니다. 어느 APK가 몇 번 빌드인지 헷갈리지 않도록
+이 규칙을 지킵니다.
+
+ARM64 + ARMV7 두 종류만 만들 때는 다음 명령을 사용합니다 (x86_64는 제외):
+
+```bash
+export PATH="$PATH:/c/Windows/System32/WindowsPowerShell/v1.0"
+env 'PROGRAMFILES(X86)=C:\Program Files (x86)' "/c/Utils/flutter/bin/flutter.bat" build apk --release --split-per-abi --target-platform android-arm64,android-arm --android-skip-build-dependency-validation
+```
+
+출력: `app-arm64-v8a-release.apk`, `app-armeabi-v7a-release.apk`
 
 ---
 

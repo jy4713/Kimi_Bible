@@ -214,7 +214,8 @@ class CommentaryScreenState extends State<CommentaryScreen> {
                       for (int i = 0; i < _entries.length; i++)
                         Container(
                           key: i < _entryKeys.length ? _entryKeys[i] : null,
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: EdgeInsets.only(
+                              bottom: 12 * settings.verseSpacing),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -230,6 +231,7 @@ class CommentaryScreenState extends State<CommentaryScreen> {
                               HtmlContent(
                                 html: _entries[i].html,
                                 fontSize: fontSize,
+                                lineHeight: settings.lineHeight,
                                 // 메인 글자만 사용자 지정 색으로 바꾸고, 주석
                                 // 본래의 강조색들은 그대로 둔다.
                                 baseTextColor: settings.customTextColor,
